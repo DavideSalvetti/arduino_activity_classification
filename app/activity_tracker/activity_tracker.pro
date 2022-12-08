@@ -11,7 +11,7 @@ SOURCES += \
         mastercontroller.cpp
 
 RESOURCES += qml.qrc \
-    qtquickcontrols2.conf
+    _qtquickcontrols2.conf
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =

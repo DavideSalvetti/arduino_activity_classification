@@ -81,7 +81,6 @@ void DeviceController::deviceScanFinished()
  */
 void DeviceController::connectToDevice(const QString &address)
 {
-    Q_UNUSED(address)
 
     if (controller) {
         controller->disconnectFromDevice();
@@ -90,7 +89,7 @@ void DeviceController::connectToDevice(const QString &address)
     }
 
     if (!controller) {
-        controller = QLowEnergyController::createCentral(QBluetoothAddress(DEVICE_ADDRESS), localDevice.address());
+        controller = QLowEnergyController::createCentral(QBluetoothAddress(address), localDevice.address());
         connect(controller, &QLowEnergyController::connected,
                 this, &DeviceController::deviceConnected);
         connect(controller, QOverload<QLowEnergyController::Error>::of(&QLowEnergyController::error),

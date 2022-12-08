@@ -3,6 +3,7 @@ import QtQuick.Window 2.15
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Controls.Material 2.12
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 
 ApplicationWindow {
@@ -22,6 +23,33 @@ ApplicationWindow {
 
         color: "#323232"
 
+        Column {
+            anchors {
+                top: parent.top
+                left: parent.left
+                bottom: connectButton.top
+                margins: 10
+            }
+
+            width: labelId.implicitWidth
+
+            Label {
+                id: labelId
+                text: "Which device do you want to connect?"
+            }
+
+            RadioButton {
+                id: radioDavide
+                checked: true
+                text: qsTr("Davide")
+            }
+
+            RadioButton {
+                id: radioMatteo
+                text: qsTr("Matteo")
+            }
+        }
+
         Button {
             id: connectButton
             anchors {
@@ -35,11 +63,16 @@ ApplicationWindow {
             enabled: masterController.ui_deviceController.deviceStatus === 0 ? true : false
 
             onClicked: {
-                masterController.ui_deviceController.connectToDevice("Ciao")
+
+                if (radioDavide.checked)
+                    masterController.ui_deviceController.connectToDevice("C3:4C:C0:10:83:DC")
+                else
+                    masterController.ui_deviceController.connectToDevice("CF:76:C9:5D:7E:92")
             }
         }
 
         Button {
+
             anchors {
                 bottom: parent.bottom
                 left: connectButton.right

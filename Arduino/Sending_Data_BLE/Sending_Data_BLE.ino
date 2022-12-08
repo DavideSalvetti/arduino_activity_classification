@@ -9,9 +9,9 @@ Nano33BLEGyroscopeData gyroscopeData;
 Nano33BLETemperatureData temperatureData;
 
 BLEService accGyroTempHumiService("2A00");
-BLEUnsignedCharCharacteristic accelerometerXYZ("2A00", BLERead | BLENotify);
-BLEUnsignedCharCharacteristic gyroscopeXYZ("2A00", BLERead | BLENotify);
-BLEUnsignedCharCharacteristic temperatureHumidity("2A00", BLERead | BLENotify);
+BLEStringCharacteristic accelerometerXYZ("3000", BLERead | BLENotify, 30);
+BLEStringCharacteristic gyroscopeXYZ("3001", BLERead | BLENotify, 30);
+BLEStringCharacteristic temperatureHumidity("3002", BLERead | BLENotify, 30);
 
 unsigned long previousMillis = 0;
 
@@ -71,8 +71,10 @@ void loop() {
 
 void updateAccXYZ(){
   if (Accelerometer.pop(accelerometerData)) {
-    sprintf(updateAccXYZ, "%.3f,%.3f,%.3f", accelerometerData.x, accelerometerData.y, accelerometerData.z);
-    accelerometerXYZ.writeValue(updateAccXYZ);
+    char data[30];
+    memset(data, 0, sizeof(data));
+    sprintf(data, "%.3f,%.3f,%.3f", accelerometerData.x, accelerometerData.y, accelerometerData.z);
+    accelerometerXYZ.writeValue(data);
     Serial.print("Accelerometer: ");
     Serial.println(accelerometerXYZ);
   }
@@ -80,8 +82,10 @@ void updateAccXYZ(){
 
 void updateGyrXYZ(){
   if (Gyroscope.pop(gyroscopeData)) {
-    sprintf(updateGyrXYZ, "%.3f,%.3f,%.3f", gyroscopeData.x, gyroscopeData.y, gyroscopeData.z);
-    gyroscopeXYZ.writeValue(updateGyrXYZ);
+    char data[30];
+    memset(data, 0, sizeof(data));
+    sprintf(data, "%.3f,%.3f,%.3f", gyroscopeData.x, gyroscopeData.y, gyroscopeData.z);
+    gyroscopeXYZ.writeValue(data);
     Serial.print("Gyroscope: ");
     Serial.println(gyroscopeXYZ);
   }
@@ -89,8 +93,10 @@ void updateGyrXYZ(){
 
 void updateTemHum(){
   if (Temperature.pop(temperatureData)) {
-    sprintf(updateTemHum, "%.3f,%.3f", temperatureData.temperatureCelsius, temperatureData.humidity);
-    temperatureHumidity.writeValue(updateTemHum);
+    char data[30];
+    memset(data, 0, sizeof(data));
+    sprintf(data, "%.3f,%.3f", temperatureData.temperatureCelsius, temperatureData.humidity);
+    temperatureHumidity.writeValue(data);
     Serial.print("Temperature: ");
     Serial.println(temperatureHumidity);
   }

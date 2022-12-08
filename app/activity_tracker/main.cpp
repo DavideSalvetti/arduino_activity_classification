@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QLoggingCategory>
 #include <QQmlContext>
+#include <QQuickStyle>
 
 #include "mastercontroller.h"
 
@@ -13,7 +14,12 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     QLoggingCategory::setFilterRules(QStringLiteral("qt.bluetooth* = true"));
 
+    QQuickStyle::setStyle("Material");
+
     MasterController masterController;
+
+    qmlRegisterType<MasterController>("org.activitytracker.controllers", 1, 0, "MasterController");
+    qmlRegisterUncreatableType<DeviceController>("org.activitytracker.controllers", 1, 0, "DeviceController", "Uncreatable type from QML.");
 
     QQmlApplicationEngine engine;
 

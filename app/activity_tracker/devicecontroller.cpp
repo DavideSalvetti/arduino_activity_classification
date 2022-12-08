@@ -1,8 +1,12 @@
 #include "devicecontroller.h"
 
+#include <QMetaEnum>
+
 DeviceController::DeviceController(QObject *parent)
     : QObject{parent}
 {
+    deviceStatus = DISCONNECTED;
+
     discoveryAgent = new QBluetoothDeviceDiscoveryAgent();
 
     discoveryAgent->setLowEnergyDiscoveryTimeout(10000);
@@ -20,9 +24,29 @@ DeviceController::DeviceController(QObject *parent)
  */
 void DeviceController::startDeviceDiscovery()
 {
-    deviceList.clear();
+//    deviceList.clear();
 
     discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
+}
+
+/**
+ * @brief error while scanning bluetooth devices
+ * @param error
+ */
+void DeviceController::deviceScanError(QBluetoothDeviceDiscoveryAgent::Error error)
+{
+    if (error == QBluetoothDeviceDiscoveryAgent::PoweredOffError)
+        qDebug() << "The Bluetooth adaptor is powered off, power it on before doing discovery.";
+    else if (error == QBluetoothDeviceDiscoveryAgent::InputOutputError)
+        qDebug() << "Writing or reading from the device resulted in an error.";
+    else {
+        static QMetaEnum qme = discoveryAgent->metaObject()->enumerator(
+            discoveryAgent->metaObject()->indexOfEnumerator("Error"));
+        qDebug() << "Error: " + QLatin1String(qme.valueToKey(error));
+    }
+
+    deviceStatus = DISCONNECTED;
+    emit deviceStatusChanged();
 }
 
 /**
@@ -39,16 +63,16 @@ void DeviceController::addDevice(const QBluetoothDeviceInfo &info)
  */
 void DeviceController::deviceScanFinished()
 {
-    deviceList.clear();
+//    deviceList.clear();
 
-    deviceList = discoveryAgent->discoveredDevices();
+//    deviceList = discoveryAgent->discoveredDevices();
 
-    if (deviceList.isEmpty())
-        qDebug() << "Bluetooth Devices Not Found!";
-    else
-        qDebug() << "Device Scan Finished!";
+//    if (deviceList.isEmpty())
+//        qDebug() << "Bluetooth Devices Not Found!";
+//    else
+//        qDebug() << "Device Scan Finished!";
 
-//    emit devicesUpdated();
+    //    emit devicesUpdated();
 }
 
 /**
@@ -57,31 +81,16 @@ void DeviceController::deviceScanFinished()
  */
 void DeviceController::connectToDevice(const QString &address)
 {
-    for (auto d: qAsConst(devices)) {
-        if (auto device = qobject_cast<DeviceInfo *>(d)) {
-            if (device->getAddress() == address ) {
-                currentDevice.setDevice(device->getDevice());
-                break;
-            }
-        }
-    }
+    Q_UNUSED(address)
 
-    if (!currentDevice.getDevice().isValid()) {
-        qWarning() << "Not a valid device - " << address;
-        return;
-    }
-
-    /* Meglio se questa parte viene spostata nella classe DeviceInfo in modo
-     * da poter gestire tutta la comunicazione con il dispositivo specifico
-     * nella classe che rappresenta tale dispositivo. */
-    if (controller && m_previousAddress != currentDevice.getAddress()) {
+    if (controller) {
         controller->disconnectFromDevice();
         delete controller;
         controller = nullptr;
     }
 
     if (!controller) {
-        controller = QLowEnergyController::createCentral(QBluetoothAddress("CF:76:C9:5D:7E:92"), localDevice.address());
+        controller = QLowEnergyController::createCentral(QBluetoothAddress(DEVICE_ADDRESS), localDevice.address());
         connect(controller, &QLowEnergyController::connected,
                 this, &DeviceController::deviceConnected);
         connect(controller, QOverload<QLowEnergyController::Error>::of(&QLowEnergyController::error),
@@ -96,5 +105,185 @@ void DeviceController::connectToDevice(const QString &address)
 
     controller->connectToDevice();
 
-    m_previousAddress = currentDevice.getAddress();
+    deviceStatus = CONNECTING;
+    emit deviceStatusChanged();
 }
+
+/**
+ * @brief getter of @param deviceStatus
+ * @return
+ */
+int DeviceController::getDeviceStatus() const
+{
+    return deviceStatus;
+}
+
+void DeviceController::deviceConnected()
+{
+    qDebug() << "Device Connected";
+
+    controller->discoverServices();
+
+    deviceService = controller->createServiceObject(QBluetoothUuid(SERVICE_UUID));
+
+    if (!deviceService)
+        return;
+
+    qDebug() << deviceService->state();
+
+
+    if (deviceService->state() == QLowEnergyService::DiscoveryRequired) {
+        connect(deviceService, &QLowEnergyService::stateChanged,
+                this, &DeviceController::serviceDetailsDiscovered);
+        connect(deviceService, QOverload<QLowEnergyService::ServiceError>::of(&QLowEnergyService::error),
+                [=](QLowEnergyService::ServiceError newError){
+                    qDebug() << "communication error" << newError << deviceService->error();
+                });
+
+//        connect(deviceService, &QLowEnergyService::characteristicWritten,
+//                this, &DeviceController::characteristicHasBeenWritten);
+        connect(deviceService, &QLowEnergyService::characteristicRead,
+                this, &DeviceController::characteristicHasBeenRead);
+        connect(deviceService, &QLowEnergyService::descriptorWritten,
+                this, &DeviceController::descriptorHasBeenWritten);
+        deviceService->discoverDetails();
+        return;
+    }
+
+    //discovery already done but it should never end here
+    const QList<QLowEnergyCharacteristic> chars = deviceService->characteristics();
+    for (const QLowEnergyCharacteristic &ch : chars) {
+
+        qDebug() << "Characterisic found: " + ch.uuid().toString();
+        readCharacteristic = ch;
+
+        QLowEnergyDescriptor notification = readCharacteristic.descriptor(
+            QBluetoothUuid::ClientCharacteristicConfiguration);
+        if (!notification.isValid())
+            return;
+
+        connect(deviceService, &QLowEnergyService::characteristicChanged,
+                this, &DeviceController::characteristicHasChanged);
+
+        deviceService->writeDescriptor(notification, QByteArray::fromHex("0100"));
+    }
+
+    deviceStatus = CONNECTED;
+    emit deviceStatusChanged();
+}
+
+void DeviceController::deviceDisconnected()
+{
+    qWarning() << "Disconnected from device";
+
+    deviceStatus = DISCONNECTED;
+    emit deviceStatusChanged();
+}
+
+void DeviceController::errorReceived(QLowEnergyController::Error error)
+{
+    qWarning() << "Error: " << controller->errorString();
+    switch (error) {
+
+        // ---- UNKNOWN ERRORS ----
+    case QLowEnergyController::NoError:
+    case QLowEnergyController::UnknownError:
+
+        break;
+
+        // ---- UNKNOWN REMOVE DEVICE ERROR ----
+    case QLowEnergyController::UnknownRemoteDeviceError:
+
+        break;
+
+        // ---- CONNECTION RELATED ERROR ----
+    case QLowEnergyController::InvalidBluetoothAdapterError:
+    case QLowEnergyController::ConnectionError:
+    case QLowEnergyController::AuthorizationError:
+
+        break;
+
+        // ---- COMMUNICATION RELATED ERROR ----
+    case QLowEnergyController::AdvertisingError:
+    case QLowEnergyController::NetworkError:
+    case QLowEnergyController::RemoteHostClosedError:
+
+        break;
+
+    default:
+        break;
+    }
+
+    deviceStatus = DISCONNECTED;
+    emit deviceStatusChanged();
+}
+
+void DeviceController::addLowEnergyService(const QBluetoothUuid &serviceUuid)
+{
+    QLowEnergyService *service = controller->createServiceObject(serviceUuid);
+    if (!service) {
+        qWarning() << "Cannot create service for uuid";
+        return;
+    }
+
+    QBluetoothUuid uuid = service->serviceUuid();
+    qDebug() << "Service Found: " + uuid.toString();
+}
+
+void DeviceController::serviceScanDone()
+{
+    qDebug() << "Service Scan Finished";
+}
+
+void DeviceController::serviceDetailsDiscovered(QLowEnergyService::ServiceState newState)
+{
+    if (newState != QLowEnergyService::ServiceDiscovered) {
+        if (newState != QLowEnergyService::DiscoveringServices) {
+            QMetaObject::invokeMethod(this, "characteristicsUpdated",
+                                      Qt::QueuedConnection);
+        }
+        return;
+    }
+
+    auto service = qobject_cast<QLowEnergyService *>(sender());
+    if (!service)
+        return;
+
+    const QList<QLowEnergyCharacteristic> chars = service->characteristics();
+    for (const QLowEnergyCharacteristic &ch : chars) {
+
+        qDebug() << "Characterisic found: " + ch.uuid().toString();
+        readCharacteristic = ch;
+
+        QLowEnergyDescriptor notification = readCharacteristic.descriptor(
+            QBluetoothUuid::ClientCharacteristicConfiguration);
+        if (!notification.isValid())
+            return;
+
+        connect(deviceService, &QLowEnergyService::characteristicChanged,
+                this, &DeviceController::characteristicHasChanged);
+
+        deviceService->writeDescriptor(notification, QByteArray::fromHex("0100"));
+    }
+}
+
+void DeviceController::characteristicHasChanged(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)
+{
+    qDebug() << "CharacteristicChanged - " + characteristic.uuid().toString() + " new value: " + newValue + " newValueLenght:" + newValue.length();
+}
+
+void DeviceController::characteristicHasBeenWritten(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)
+{
+    qDebug() << "CharacteristicWritten - " + characteristic.uuid().toString() + " new value: " + newValue;
+}
+
+void DeviceController::characteristicHasBeenRead(const QLowEnergyCharacteristic &characteristic, const QByteArray &value)
+{
+    qDebug() << "CharacteristicRead - " + characteristic.uuid().toString() + " new value: " + value;
+}
+
+void DeviceController::descriptorHasBeenWritten(const QLowEnergyDescriptor &descriptor, const QByteArray &newValue)
+{
+    qDebug() << "DescriptorWritten - " + descriptor.uuid().toString() + " new value: " + newValue;
+}
+

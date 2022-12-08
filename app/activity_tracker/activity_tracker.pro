@@ -1,4 +1,4 @@
-QT += quick bluetooth
+QT += quick bluetooth quickcontrols2
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -6,10 +6,12 @@ QT += quick bluetooth
 
 SOURCES += \
         devicecontroller.cpp \
+        filemanager.cpp \
         main.cpp \
         mastercontroller.cpp
 
-RESOURCES += qml.qrc
+RESOURCES += qml.qrc \
+    qtquickcontrols2.conf
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -24,4 +26,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     devicecontroller.h \
+    filemanager.h \
     mastercontroller.h

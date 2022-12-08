@@ -24,7 +24,7 @@ DeviceController::DeviceController(QObject *parent)
  */
 void DeviceController::startDeviceDiscovery()
 {
-//    deviceList.clear();
+    //    deviceList.clear();
 
     discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
 }
@@ -63,14 +63,14 @@ void DeviceController::addDevice(const QBluetoothDeviceInfo &info)
  */
 void DeviceController::deviceScanFinished()
 {
-//    deviceList.clear();
+    //    deviceList.clear();
 
-//    deviceList = discoveryAgent->discoveredDevices();
+    //    deviceList = discoveryAgent->discoveredDevices();
 
-//    if (deviceList.isEmpty())
-//        qDebug() << "Bluetooth Devices Not Found!";
-//    else
-//        qDebug() << "Device Scan Finished!";
+    //    if (deviceList.isEmpty())
+    //        qDebug() << "Bluetooth Devices Not Found!";
+    //    else
+    //        qDebug() << "Device Scan Finished!";
 
     //    emit devicesUpdated();
 }
@@ -124,10 +124,12 @@ void DeviceController::deviceConnected()
 
     controller->discoverServices();
 
-    deviceService = controller->createServiceObject(QBluetoothUuid(SERVICE_UUID));
+    deviceService = controller->createServiceObject(QBluetoothUuid(QString("{e2e65ffc-5687-4cbe-8f2d-db76265f269f}")));
 
-    if (!deviceService)
+    if (!deviceService) {
+        qWarning() << "The service UUID is not correct!";
         return;
+    }
 
     qDebug() << deviceService->state();
 
@@ -140,8 +142,8 @@ void DeviceController::deviceConnected()
                     qDebug() << "communication error" << newError << deviceService->error();
                 });
 
-//        connect(deviceService, &QLowEnergyService::characteristicWritten,
-//                this, &DeviceController::characteristicHasBeenWritten);
+        //        connect(deviceService, &QLowEnergyService::characteristicWritten,
+        //                this, &DeviceController::characteristicHasBeenWritten);
         connect(deviceService, &QLowEnergyService::characteristicRead,
                 this, &DeviceController::characteristicHasBeenRead);
         connect(deviceService, &QLowEnergyService::descriptorWritten,
@@ -228,6 +230,49 @@ void DeviceController::addLowEnergyService(const QBluetoothUuid &serviceUuid)
 
     QBluetoothUuid uuid = service->serviceUuid();
     qDebug() << "Service Found: " + uuid.toString();
+
+    if (uuid.toString() == "{e2e65ffc-5687-4cbe-8f2d-db76265f269f}") {
+
+        deviceService = service;
+        qDebug() << "Communication Service Found! State:" << deviceService->state();
+
+        if (deviceService->state() == QLowEnergyService::DiscoveryRequired) {
+            connect(deviceService, &QLowEnergyService::stateChanged,
+                    this, &DeviceController::serviceDetailsDiscovered);
+            connect(deviceService, QOverload<QLowEnergyService::ServiceError>::of(&QLowEnergyService::error),
+                    [=](QLowEnergyService::ServiceError newError){
+                        qDebug() << "communication error" << newError << deviceService->error();
+                    });
+
+            //        connect(deviceService, &QLowEnergyService::characteristicWritten,
+            //                this, &DeviceController::characteristicHasBeenWritten);
+            connect(deviceService, &QLowEnergyService::characteristicRead,
+                    this, &DeviceController::characteristicHasBeenRead);
+            connect(deviceService, &QLowEnergyService::descriptorWritten,
+                    this, &DeviceController::descriptorHasBeenWritten);
+
+            deviceService->discoverDetails();
+            return;
+        }
+
+        //discovery already done but it should never end here
+        const QList<QLowEnergyCharacteristic> chars = deviceService->characteristics();
+        for (const QLowEnergyCharacteristic &ch : chars) {
+
+            qDebug() << "Characterisic found: " + ch.uuid().toString();
+            readCharacteristic = ch;
+
+            QLowEnergyDescriptor notification = readCharacteristic.descriptor(
+                QBluetoothUuid::ClientCharacteristicConfiguration);
+            if (!notification.isValid())
+                return;
+
+            connect(deviceService, &QLowEnergyService::characteristicChanged,
+                    this, &DeviceController::characteristicHasChanged);
+
+            deviceService->writeDescriptor(notification, QByteArray::fromHex("0100"));
+        }
+    }
 }
 
 void DeviceController::serviceScanDone()
@@ -253,23 +298,34 @@ void DeviceController::serviceDetailsDiscovered(QLowEnergyService::ServiceState 
     for (const QLowEnergyCharacteristic &ch : chars) {
 
         qDebug() << "Characterisic found: " + ch.uuid().toString();
-        readCharacteristic = ch;
 
-        QLowEnergyDescriptor notification = readCharacteristic.descriptor(
-            QBluetoothUuid::ClientCharacteristicConfiguration);
-        if (!notification.isValid())
-            return;
+        if (ch.uuid().toString() == "{00003000-0000-1000-8000-00805f9b34fb}") {
 
-        connect(deviceService, &QLowEnergyService::characteristicChanged,
-                this, &DeviceController::characteristicHasChanged);
+            readCharacteristic = ch;
 
-        deviceService->writeDescriptor(notification, QByteArray::fromHex("0100"));
+            QLowEnergyDescriptor notification = readCharacteristic.descriptor(
+                QBluetoothUuid::ClientCharacteristicConfiguration);
+            if (!notification.isValid())
+                return;
+
+            connect(deviceService, &QLowEnergyService::characteristicChanged,
+                    this, &DeviceController::characteristicHasChanged);
+
+            deviceService->writeDescriptor(notification, QByteArray::fromHex("0100"));
+
+        } else if (ch.uuid().toString() == "") {
+
+        } else if (ch.uuid().toString() == "") {
+
+        }
     }
 }
 
 void DeviceController::characteristicHasChanged(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)
 {
     qDebug() << "CharacteristicChanged - " + characteristic.uuid().toString() + " new value: " + newValue + " newValueLenght:" + newValue.length();
+
+    emit characteristicChanged(characteristic.uuid().toString(), newValue);
 }
 
 void DeviceController::characteristicHasBeenWritten(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)

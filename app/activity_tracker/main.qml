@@ -12,8 +12,9 @@ ApplicationWindow {
     title: qsTr("Hello World")
 
     Material.theme: Material.Dark
-    Material.accent: Material.Purple
+    Material.accent: "white"
     Material.background: Material.Grey
+    Material.primary: Material.Purple
 
     Rectangle {
 
@@ -45,12 +46,15 @@ ApplicationWindow {
                 margins: 10
             }
 
-            text: "Record"
+            text: masterController.ui_fileManager.recording == false ? "Record" : "Stop Record"
 
-            enabled: masterController.ui_deviceController.deviceStatus === 2 ? true : false
+            enabled: true
 
             onClicked: {
-                masterController.ui_deviceController.connectToDevice("Ciao")
+                if (masterController.ui_fileManager.recording)
+                    masterController.ui_fileManager.stopRecording()
+                else
+                    masterController.ui_fileManager.startRecording()
             }
         }
     }

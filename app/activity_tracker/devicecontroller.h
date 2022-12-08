@@ -10,7 +10,7 @@
 #define DEVICE_ADDRESS QString("C3:4C:C0:10:83:DC")
 
 #define SERVICE_UUID QString("e2e65ffc-5687-4cbe-8f2d-db76265f269f")
-#define CHARACTERISTIC_UUID QString("478e24cf-5e0c-451d-b220-02aacd43f0c1f")
+#define CHARACTERISTIC_UUID QString("00002a00-0000-1000-8000-00805f9b34fb")
 
 class DeviceController : public QObject
 {
@@ -53,6 +53,8 @@ private slots:
 
 signals:
     void deviceStatusChanged();
+
+    void characteristicChanged(QString uuid, QByteArray newValue);
 
 
 private:

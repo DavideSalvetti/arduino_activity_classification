@@ -1,4 +1,4 @@
-QT += quick bluetooth quickcontrols2
+QT += quick bluetooth quickcontrols2 androidextras
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -28,3 +28,15 @@ HEADERS += \
     devicecontroller.h \
     filemanager.h \
     mastercontroller.h
+
+DISTFILES += \
+    android/AndroidManifest.xml \
+    android/build.gradle \
+    android/gradle.properties \
+    android/gradle/wrapper/gradle-wrapper.jar \
+    android/gradle/wrapper/gradle-wrapper.properties \
+    android/gradlew \
+    android/gradlew.bat \
+    android/res/values/libs.xml
+
+ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android

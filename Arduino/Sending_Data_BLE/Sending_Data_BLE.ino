@@ -8,12 +8,11 @@ Nano33BLEAccelerometerData accelerometerData;
 Nano33BLEGyroscopeData gyroscopeData;
 Nano33BLETemperatureData temperatureData;
 
-BLEService accGyroTempHumiService("2A00");
-BLEStringCharacteristic accelerometerXYZ("3000", BLERead | BLENotify, 30);
-BLEStringCharacteristic gyroscopeXYZ("3001", BLERead | BLENotify, 30);
-BLEStringCharacteristic temperatureHumidity("3002", BLERead | BLENotify, 30);
+BLEService accGyroTempHumiService("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
+BLEStringCharacteristic sensorCharacteristic("3000", BLERead | BLENotify, 150);
 
 unsigned long previousMillis = 0;
+unsigned long incrementalVal = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -33,9 +32,7 @@ void setup() {
 
   BLE.setLocalName("Activity Tracker");
   BLE.setAdvertisedService(accGyroTempHumiService);
-  accGyroTempHumiService.addCharacteristic(accelerometerXYZ);
-  accGyroTempHumiService.addCharacteristic(gyroscopeXYZ);
-  accGyroTempHumiService.addCharacteristic(temperatureHumidity);
+  accGyroTempHumiService.addCharacteristic(sensorCharacteristic);
   BLE.addService(accGyroTempHumiService);
 
   BLE.advertise();
@@ -55,11 +52,11 @@ void loop() {
     while(central.connect()){
       unsigned long currentMillis = millis();
 
-      if(currentMillis - previousMillis >= 200){
+      if(currentMillis - previousMillis >= 10){
         previousMillis = currentMillis;
-        updateAccXYZ();
-        updateGyrXYZ();
-        updateTemHum();
+        incrementalVal++;
+
+        updateSensors();
       }
     }
 
@@ -69,35 +66,34 @@ void loop() {
   }
 }
 
-void updateAccXYZ(){
+/*  Funzione per l'aggiornamento dei valori della caratteristica. 
+ *  Aggiorna la caratteristica con i valori di accelerometro, giroscopio, temperatura e umidità.
+ *  Per verificare il timing, inserisce un valore incrementale alla fine.
+ */
+void updateSensors() {
+
+  char data[150];
+  memset(data, 0, sizeof(data));
   if (Accelerometer.pop(accelerometerData)) {
-    char data[30];
-    memset(data, 0, sizeof(data));
-    sprintf(data, "%.3f,%.3f,%.3f", accelerometerData.x, accelerometerData.y, accelerometerData.z);
-    accelerometerXYZ.writeValue(data);
-    Serial.print("Accelerometer: ");
-    Serial.println(accelerometerXYZ);
+    sprintf(data, "%.3f,%.3f,%.3f,", accelerometerData.x, accelerometerData.y, accelerometerData.z);
   }
-}
 
-void updateGyrXYZ(){
+  int len = strlen(data);
+
   if (Gyroscope.pop(gyroscopeData)) {
-    char data[30];
-    memset(data, 0, sizeof(data));
-    sprintf(data, "%.3f,%.3f,%.3f", gyroscopeData.x, gyroscopeData.y, gyroscopeData.z);
-    gyroscopeXYZ.writeValue(data);
-    Serial.print("Gyroscope: ");
-    Serial.println(gyroscopeXYZ);
+    sprintf(&data[len], "%.3f,%.3f,%.3f,", gyroscopeData.x, gyroscopeData.y, gyroscopeData.z);
   }
-}
 
-void updateTemHum(){
+  len = strlen(data);
+
   if (Temperature.pop(temperatureData)) {
-    char data[30];
-    memset(data, 0, sizeof(data));
-    sprintf(data, "%.3f,%.3f", temperatureData.temperatureCelsius, temperatureData.humidity);
-    temperatureHumidity.writeValue(data);
-    Serial.print("Temperature: ");
-    Serial.println(temperatureHumidity);
+    sprintf(&data[len], "%.3f,%.3f,", temperatureData.temperatureCelsius, temperatureData.humidity);
   }
+
+  len = strlen(data);
+
+  sprintf(&data[len], "%i", incrementalVal);
+
+  sensorCharacteristic.writeValue(data);
+
 }

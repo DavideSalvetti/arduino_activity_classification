@@ -4,6 +4,11 @@
 #include "Nano33BLEGyroscope.h"
 #include "Nano33BLETemperature.h"
 #include "string.h"
+#include "NRF52_MBED_TimerInterrupt.h"
+#include "NRF52_MBED_ISR_Timer.h"
+
+#define HW_TIMER_INTERVAL_MS          1
+#define TIMER_INTERVAL              10L
 
 Nano33BLEAccelerometerData accelerometerData;
 Nano33BLEGyroscopeData gyroscopeData;
@@ -11,8 +16,7 @@ Nano33BLETemperatureData temperatureData;
 
 BLEService accGyroTempHumiService("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
 BLEStringCharacteristic sensorCharacteristic("3000", BLERead | BLENotify, 150);
-
-unsigned long currentMillis = 0;
+BLEDevice central;
 
 char token[150] = "";
 char accstr[50] = "";
@@ -20,18 +24,11 @@ char gyrostr[50] = "";
 char tempstr[10] = "";
 char timestr[40] = "";
 
-BLEDevice central;
-
-#define TIMER_INTERRUPT_DEBUG         0
-#define _TIMERINTERRUPT_LOGLEVEL_     0
-#include "NRF52_MBED_TimerInterrupt.h"
-#include "NRF52_MBED_ISR_Timer.h"
-#define HW_TIMER_INTERVAL_MS      1
-NRF52_MBED_Timer ITimer(NRF_TIMER_1);
+NRF52_MBED_Timer ITimer(NRF_TIMER_3);
 NRF52_MBED_ISRTimer ISR_Timer;
-#define TIMER_INTERVAL_1S             10L
 
 bool mutex= false;
+unsigned long currentMillis = 0;
 
 void TimerHandler()
 {
@@ -43,8 +40,6 @@ void setup() {
   Gyroscope.begin();
   Temperature.begin();
 
-  pinMode(LED_BUILTIN, OUTPUT);
-
   if(!BLE.begin()){
     while(true);
   }
@@ -53,20 +48,16 @@ void setup() {
   BLE.setAdvertisedService(accGyroTempHumiService);
   accGyroTempHumiService.addCharacteristic(sensorCharacteristic);
   BLE.addService(accGyroTempHumiService);
-
   BLE.advertise();
 
-  Serial.begin(115200);
-
   ITimer.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, TimerHandler);
-  ISR_Timer.setInterval(TIMER_INTERVAL_1S,  updateSensors);
+  ISR_Timer.setInterval(TIMER_INTERVAL,  updateSensors);
 }
 
 void loop() {
   central = BLE.central();
 
-  if(mutex){
-
+  if(mutex && central){
     sprintf(token,"");
 
     sprintf(accstr, "%.3f,%.3f,%.3f,", accelerometerData.x, accelerometerData.y, accelerometerData.z);
@@ -79,12 +70,9 @@ void loop() {
     strcat(token, gyrostr);
     strcat(token, tempstr);
     strcat(token, timestr);
+    
+    sensorCharacteristic.writeValue(token);
 
-    Serial.println(token);
-
-    if(central){
-     sensorCharacteristic.writeValue(token);
-    }
     mutex = false;
   }
 }

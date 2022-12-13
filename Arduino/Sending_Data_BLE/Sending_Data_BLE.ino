@@ -4,9 +4,6 @@
 #include "Nano33BLEGyroscope.h"
 #include "Nano33BLETemperature.h"
 #include "string.h"
-//#include "Timer.h"
-
-//Timer t;
 
 Nano33BLEAccelerometerData accelerometerData;
 Nano33BLEGyroscopeData gyroscopeData;
@@ -23,10 +20,22 @@ char gyrostr[50] = "";
 char tempstr[10] = "";
 char timestr[40] = "";
 
+BLEDevice central;
+
+#define TIMER_INTERRUPT_DEBUG         0
+#define _TIMERINTERRUPT_LOGLEVEL_     0
+#include "NRF52_MBED_TimerInterrupt.h"
+#include "NRF52_MBED_ISR_Timer.h"
+#define HW_TIMER_INTERVAL_MS      1
+NRF52_MBED_Timer ITimer(NRF_TIMER_3);
+NRF52_MBED_ISRTimer ISR_Timer;
+#define TIMER_INTERVAL_1S             1000L
+void TimerHandler()
+{
+  ISR_Timer.run();
+}
 
 void setup() {
-  Serial.begin(115200);
-
   Accelerometer.begin();
   Gyroscope.begin();
   Temperature.begin();
@@ -34,7 +43,6 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
   if(!BLE.begin()){
-    Serial.println("starting BLE failed!");
     while(true);
   }
 
@@ -45,19 +53,22 @@ void setup() {
 
   BLE.advertise();
 
-  Serial.println("Bluetooth® device active, waiting for connections...");
+
+  ITimer.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, TimerHandler);
+  ISR_Timer.setInterval(TIMER_INTERVAL_1S,  updateSensors);
+  BLEDevice central = BLE.central();
 }
 
 void loop() {
-  BLEDevice central = BLE.central();
-
+  central = BLE.central();
+/*
   if(central){
     Serial.print("Connected to central: ");
     Serial.println(central.address());
 
     digitalWrite(LED_BUILTIN, HIGH);
 
-    int num_timer;
+
 
     while(central.connect()){
       unsigned long currentMillis = millis();
@@ -71,12 +82,13 @@ void loop() {
     }
 
     //t.stop(num_timer);
+  
 
     digitalWrite(LED_BUILTIN, LOW);
     Serial.print("Disconnected from central: ");
     Serial.println(central.address());
   }
-
+*/
   //t.update();
 }
 
@@ -107,6 +119,7 @@ void updateSensors() {
   strcat(token, timestr);
 
   //Serial.println(token);
-
-  sensorCharacteristic.writeValue(token);
+  /*
+  if(central && central.connect())
+    sensorCharacteristic.writeValue(token);*/
 }

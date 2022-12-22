@@ -46,7 +46,7 @@ void DeviceController::deviceScanError(QBluetoothDeviceDiscoveryAgent::Error err
     }
 
     deviceStatus = DISCONNECTED;
-    emit deviceStatusChanged();
+    emit deviceStatusChanged(deviceStatus);
 }
 
 /**
@@ -105,7 +105,7 @@ void DeviceController::connectToDevice(const QString &address)
     controller->connectToDevice();
 
     deviceStatus = CONNECTING;
-    emit deviceStatusChanged();
+    emit deviceStatusChanged(deviceStatus);
 }
 
 /**
@@ -114,7 +114,15 @@ void DeviceController::connectToDevice(const QString &address)
  */
 int DeviceController::getDeviceStatus() const
 {
-    return deviceStatus;
+    int value = 0;
+    if (deviceStatus == CONNECTED)
+        value = 2;
+    else if (deviceStatus == DISCONNECTED)
+        value = 0;
+    else if (deviceStatus == CONNECTING)
+        value = 1;
+
+    return value;
 }
 
 void DeviceController::deviceConnected()
@@ -124,6 +132,11 @@ void DeviceController::deviceConnected()
     controller->discoverServices();
 
     deviceService = controller->createServiceObject(QBluetoothUuid(QString("{e2e65ffc-5687-4cbe-8f2d-db76265f269f}")));
+
+
+    deviceStatus = CONNECTED;
+    emit deviceStatusChanged(deviceStatus);
+
 
     if (!deviceService) {
         qWarning() << "The service UUID is not correct!";
@@ -169,8 +182,7 @@ void DeviceController::deviceConnected()
         deviceService->writeDescriptor(notification, QByteArray::fromHex("0100"));
     }
 
-    deviceStatus = CONNECTED;
-    emit deviceStatusChanged();
+
 }
 
 void DeviceController::deviceDisconnected()
@@ -178,7 +190,7 @@ void DeviceController::deviceDisconnected()
     qWarning() << "Disconnected from device";
 
     deviceStatus = DISCONNECTED;
-    emit deviceStatusChanged();
+    emit deviceStatusChanged(deviceStatus);
 }
 
 void DeviceController::errorReceived(QLowEnergyController::Error error)
@@ -216,7 +228,7 @@ void DeviceController::errorReceived(QLowEnergyController::Error error)
     }
 
     deviceStatus = DISCONNECTED;
-    emit deviceStatusChanged();
+    emit deviceStatusChanged(deviceStatus);
 }
 
 void DeviceController::addLowEnergyService(const QBluetoothUuid &serviceUuid)

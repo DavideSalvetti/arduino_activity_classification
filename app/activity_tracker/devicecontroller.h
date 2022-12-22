@@ -52,7 +52,7 @@ private slots:
     void descriptorHasBeenWritten(const QLowEnergyDescriptor &descriptor, const QByteArray &newValue);
 
 signals:
-    void deviceStatusChanged();
+    void deviceStatusChanged(int status);
 
     void characteristicChanged(QString uuid, QByteArray newValue);
 

@@ -17,6 +17,22 @@ ApplicationWindow {
     Material.background: Material.Grey
     Material.primary: Material.Purple
 
+    Connections {
+        target: masterController.ui_deviceController
+
+        function onDeviceStatusChanged(status)  {
+            console.log("Device Status Changed! " + status)
+
+            if (status == 0)
+                commentId.text = "Disconnected"
+            else if (status == 1)
+                commentId.text = "Connecting"
+            else if (status == 2)
+                commentId.text = "Connected"
+
+        }
+    }
+
     Rectangle {
 
         anchors.fill: parent
@@ -48,6 +64,11 @@ ApplicationWindow {
                 id: radioMatteo
                 text: qsTr("Matteo")
             }
+
+            RadioButton {
+                id: radioMartina
+                text: qsTr("Martina")
+            }
         }
 
         Button {
@@ -58,6 +79,7 @@ ApplicationWindow {
                 margins: 10
             }
 
+
             text: "Connect"
 
             enabled: masterController.ui_deviceController.deviceStatus === 0 ? true : false
@@ -66,16 +88,35 @@ ApplicationWindow {
 
                 if (radioDavide.checked)
                     masterController.ui_deviceController.connectToDevice("C3:4C:C0:10:83:DC")
-                else
+                else if (radioMatteo.checked)
                     masterController.ui_deviceController.connectToDevice("CF:76:C9:5D:7E:92")
+                else
+                    masterController.ui_deviceController.connectToDevice("C0:8E:37:3D:2F:FD")
             }
         }
 
-        Button {
+        Label {
+            id: commentId
 
             anchors {
                 bottom: parent.bottom
                 left: connectButton.right
+                right: recordButton.left
+                margins: 10
+            }
+
+            height: connectButton.height
+            text: "Disconnected"
+
+            horizontalAlignment: parent.horizontalCenter
+
+        }
+
+        Button {
+            id: recordButton
+            anchors {
+                bottom: parent.bottom
+                right: parent.right
                 margins: 10
             }
 

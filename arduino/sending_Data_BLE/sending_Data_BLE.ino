@@ -7,8 +7,15 @@
 #include "NRF52_MBED_TimerInterrupt.h"
 #include "NRF52_MBED_ISR_Timer.h"
 
+#define CIRCULAR_BUFFER_INT_SAFE
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+CircularBuffer<Nano33BLEAccelerometerData, 3000> accBuffer;
+CircularBuffer<Nano33BLEGyroscopeData, 3000> gyroBuffer;
+CircularBuffer<Nano33BLETemperatureData, 3000> tempBuffer;
+CircularBuffer<unsigned long, 3000> timeBuffer;
+
 #define HW_TIMER_INTERVAL_MS          1
-#define TIMER_INTERVAL              10L
+#define TIMER_INTERVAL              15L
 
 Nano33BLEAccelerometerData accelerometerData;
 Nano33BLEGyroscopeData gyroscopeData;
@@ -57,7 +64,17 @@ void setup() {
 void loop() {
   central = BLE.central();
 
-  if(mutex && central){
+  if(!mutex && !timeBuffer.isEmpty() && central){
+    mutex = true;
+    if(!accBuffer.isEmpty())
+      accelerometerData = accBuffer.pop();
+    if(!accBuffer.isEmpty())
+      gyroscopeData = gyroBuffer.pop();
+    if(!tempBuffer.isEmpty())
+      temperatureData = tempBuffer.pop();
+    currentMillis = timeBuffer.pop();
+    mutex = false;
+
     sprintf(token,"");
 
     sprintf(accstr, "%.3f,%.3f,%.3f,", accelerometerData.x, accelerometerData.y, accelerometerData.z);
@@ -72,19 +89,26 @@ void loop() {
     strcat(token, timestr);
     
     sensorCharacteristic.writeValue(token);
-
-    mutex = false;
   }
 }
 
 void updateSensors() {
   if(!mutex){
     mutex = true;
+    Nano33BLEAccelerometerData accelerometerData1;
+    Nano33BLEGyroscopeData gyroscopeData1;
+    Nano33BLETemperatureData temperatureData1;
 
-    Accelerometer.pop(accelerometerData);
-    Gyroscope.pop(gyroscopeData);
-    Temperature.pop(temperatureData);
+    if(Accelerometer.pop(accelerometerData1))
+      accBuffer.unshift(accelerometerData1);
 
-    currentMillis = millis();
+    if(Gyroscope.pop(gyroscopeData1))
+      gyroBuffer.unshift(gyroscopeData1);
+
+    if(Temperature.pop(temperatureData1))
+      tempBuffer.unshift(temperatureData1);
+
+    timeBuffer.unshift(millis());
+    mutex = false;
   }
 }

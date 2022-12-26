@@ -14,5 +14,3 @@ plot(camminata(:,9),camminata_1(:,4));
 %plot(camminata(:,9),camminata_1(:,5));
 %plot(camminata(:,9),camminata_1(:,6));
 hold off
-
-

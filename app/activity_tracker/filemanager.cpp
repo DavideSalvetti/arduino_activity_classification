@@ -6,7 +6,9 @@
 #include <QDateTime>
 
 FileManager::FileManager(QObject *parent)
-    : QObject{parent}
+    : QObject{parent},
+    seconds(0),
+    millis(0)
 {
 
     for (int i = 0; i <= static_cast<int>(QStandardPaths::AppConfigLocation); i++)
@@ -23,6 +25,9 @@ FileManager::FileManager(QObject *parent)
 void FileManager::startRecording()
 {
     recording = true;
+
+    seconds = 0;
+    millis = 0;
 
     emit recordingChanged();
 
@@ -42,10 +47,15 @@ void FileManager::stopRecording()
     QString documentPath =  QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 
     QDateTime date = QDateTime::currentDateTime();
-    QString fileName = date.toString("dd_MM_yyyy_hh_mm") + "_reg.csv";
+    QString fileName = date.toString("dd_MM_yyyy_hh_mm") + ".csv";
+
+    QByteArray header = "acc x,acc y,acc z,gyro x,gyro y,gyro z,temp,humidity,timestamp";
+    header.append(0x0D);
 
     QFile file(documentPath + "/" + fileName);
     if (file.open(QIODevice::WriteOnly)) {
+
+        file.write(header);
 
         file.write(dataCaptured);
 
@@ -62,13 +72,27 @@ bool FileManager::getRecording() const
     return recording;
 }
 
+int FileManager::getSeconds() const
+{
+    return seconds;
+}
+
 void FileManager::onCharacteristicUpdated(QString uuid, QByteArray newValue)
 {
+    Q_UNUSED(uuid)
+
     if (recording) {
-        qDebug() << "Received Value";
 
         dataCaptured.append(newValue);
         dataCaptured.append(0x0D);
+
+        millis += 15;
+        seconds = millis / 1000;
+
+        emit secondsChanged();
+
+        if (seconds >= 76)
+            stopRecording();
     }
 }
 

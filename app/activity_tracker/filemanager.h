@@ -7,6 +7,7 @@ class FileManager : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool recording READ getRecording NOTIFY recordingChanged)
+    Q_PROPERTY(int seconds READ getSeconds NOTIFY secondsChanged)
 public:
     explicit FileManager(QObject *parent = nullptr);
 
@@ -14,16 +15,20 @@ public:
     Q_INVOKABLE void stopRecording();
 
     bool getRecording() const;
+    int getSeconds() const;
 
 public slots:
     void onCharacteristicUpdated(QString uuid, QByteArray newValue);
 
 signals:
     void recordingChanged();
+    void secondsChanged();
 
 private:
     bool recording {false};
     QByteArray dataCaptured;
+    int seconds;
+    int millis;
 
 };
 

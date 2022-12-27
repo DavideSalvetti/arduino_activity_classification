@@ -129,14 +129,12 @@ void DeviceController::deviceConnected()
 {
     qDebug() << "Device Connected";
 
-    controller->discoverServices();
-
-    deviceService = controller->createServiceObject(QBluetoothUuid(QString("{e2e65ffc-5687-4cbe-8f2d-db76265f269f}")));
-
-
     deviceStatus = CONNECTED;
     emit deviceStatusChanged(deviceStatus);
 
+    controller->discoverServices();
+
+    deviceService = controller->createServiceObject(QBluetoothUuid(QString("{e2e65ffc-5687-4cbe-8f2d-db76265f269f}")));
 
     if (!deviceService) {
         qWarning() << "The service UUID is not correct!";

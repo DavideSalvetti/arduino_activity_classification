@@ -12,11 +12,6 @@ ApplicationWindow {
     visible: true
     title: qsTr("Hello World")
 
-    Material.theme: Material.Dark
-    Material.accent: "white"
-    Material.background: Material.Grey
-    Material.primary: Material.Purple
-
     Connections {
         target: masterController.ui_deviceController
 
@@ -33,11 +28,11 @@ ApplicationWindow {
         }
     }
 
-    Rectangle {
+    Frame {
 
         anchors.fill: parent
 
-        color: "#323232"
+        //color: "white"
 
         Column {
             anchors {
@@ -51,7 +46,7 @@ ApplicationWindow {
 
             Label {
                 id: labelId
-                text: "Which device do you want to connect?"
+                text: "Choose a device:"
             }
 
             RadioButton {
@@ -71,13 +66,29 @@ ApplicationWindow {
             }
         }
 
+
+        Label {
+            anchors {
+                right: parent.right
+                top: parent.top
+                margins: 10
+            }
+
+            text: qsTr("Seconds recorded:") + " " + masterController.ui_fileManager.seconds
+
+        }
+
+
         Button {
             id: connectButton
+
             anchors {
                 bottom: parent.bottom
                 left: parent.left
                 margins: 10
             }
+
+            highlighted: true
 
 
             text: "Connect"
@@ -105,10 +116,11 @@ ApplicationWindow {
                 margins: 10
             }
 
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment:  Text.AlignVCenter
+
             height: connectButton.height
             text: "Disconnected"
-
-            horizontalAlignment: parent.horizontalCenter
 
         }
 
@@ -119,6 +131,8 @@ ApplicationWindow {
                 right: parent.right
                 margins: 10
             }
+
+            highlighted: true
 
             text: masterController.ui_fileManager.recording == false ? "Record" : "Stop Record"
 

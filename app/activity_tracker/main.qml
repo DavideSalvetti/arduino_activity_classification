@@ -105,7 +105,7 @@ ApplicationWindow {
                     else
                         masterController.ui_deviceController.connectToDevice("C0:8E:37:3D:2F:FD")
                 } else {
-
+                    masterController.ui_deviceController.disconnectFromDevice()
                 }
             }
         }

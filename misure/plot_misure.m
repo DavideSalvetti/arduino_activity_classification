@@ -113,8 +113,8 @@ m_150=mean(d_150)
 s_150 = std(d_150)
 
 figure
-d_ok = diff(ok(:,9));
-plot(d_ok,'o');
-m_ok=mean(d_ok)
-s_ok = std(d_ok)
+d_test = diff(test(:,9));
+plot(d_test,'o');
+m_test=mean(d_test)
+s_test = std(d_test)
 

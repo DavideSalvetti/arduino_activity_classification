@@ -64,7 +64,7 @@ void setup() {
 void loop() {
   central = BLE.central();
 
-  if(!mutex && !timeBuffer.isEmpty() && central){
+  if(!mutex && !timeBuffer.isEmpty()){
     mutex = true;
     if(!accBuffer.isEmpty())
       accelerometerData = accBuffer.pop();
@@ -87,8 +87,9 @@ void loop() {
     strcat(token, gyrostr);
     strcat(token, tempstr);
     strcat(token, timestr);
-    
-    sensorCharacteristic.writeValue(token);
+
+    if(central)
+      sensorCharacteristic.writeValue(token);
   }
 }
 

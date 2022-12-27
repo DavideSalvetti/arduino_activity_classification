@@ -92,9 +92,9 @@ void loop() {
 
     if(central)
       sensorCharacteristic.writeValue(token);
-
-    analogWrite(LED_BUILTIN, map(timeBuffer.size(),0,3000,0,255));
   }
+
+  analogWrite(LED_BUILTIN, map(accBuffer.size(),0,3000,0,255));
 }
 
 void updateSensors() {

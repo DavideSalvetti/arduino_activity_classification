@@ -108,6 +108,12 @@ void DeviceController::connectToDevice(const QString &address)
     emit deviceStatusChanged(deviceStatus);
 }
 
+void DeviceController::disconnectFromDevice()
+{
+    controller->disconnectFromDevice();
+}
+
+
 /**
  * @brief getter of @param deviceStatus
  * @return

@@ -91,18 +91,22 @@ ApplicationWindow {
             highlighted: true
 
 
-            text: "Connect"
+            text: masterController.ui_deviceController.deviceStatus === 0 ? "Connect" : "Disconnect"
 
-            enabled: masterController.ui_deviceController.deviceStatus === 0 ? true : false
+            enabled: true
 
             onClicked: {
 
-                if (radioDavide.checked)
-                    masterController.ui_deviceController.connectToDevice("C3:4C:C0:10:83:DC")
-                else if (radioMatteo.checked)
-                    masterController.ui_deviceController.connectToDevice("CF:76:C9:5D:7E:92")
-                else
-                    masterController.ui_deviceController.connectToDevice("C0:8E:37:3D:2F:FD")
+                if (connectButton.text == "Connect") {
+                    if (radioDavide.checked)
+                        masterController.ui_deviceController.connectToDevice("C3:4C:C0:10:83:DC")
+                    else if (radioMatteo.checked)
+                        masterController.ui_deviceController.connectToDevice("CF:76:C9:5D:7E:92")
+                    else
+                        masterController.ui_deviceController.connectToDevice("C0:8E:37:3D:2F:FD")
+                } else {
+
+                }
             }
         }
 

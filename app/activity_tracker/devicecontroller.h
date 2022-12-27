@@ -21,6 +21,7 @@ public:
 
     Q_INVOKABLE void startDeviceDiscovery();
     Q_INVOKABLE void connectToDevice(const QString &address);
+    Q_INVOKABLE void disconnectFromDevice();
 
 
     int getDeviceStatus() const;
@@ -30,6 +31,7 @@ public:
         CONNECTING = 1,
         CONNECTED = 2
     };
+
 
 
 private slots:

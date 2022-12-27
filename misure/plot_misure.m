@@ -118,3 +118,7 @@ plot(d_test,'o');
 m_test=mean(d_test)
 s_test = std(d_test)
 
+test_1 = test - mean(test,1); 
+test_1 = movmean(test,100);
+
+

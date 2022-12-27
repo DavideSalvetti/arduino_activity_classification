@@ -59,6 +59,8 @@ void setup() {
 
   ITimer.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, TimerHandler);
   ISR_Timer.setInterval(TIMER_INTERVAL,  updateSensors);
+
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
@@ -90,6 +92,8 @@ void loop() {
 
     if(central)
       sensorCharacteristic.writeValue(token);
+
+    analogWrite(LED_BUILTIN, map(timeBuffer.size(),0,3000,0,255));
   }
 }
 

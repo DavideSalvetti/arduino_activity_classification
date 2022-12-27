@@ -3,16 +3,16 @@ camminata_1 = movmean(camminata_1,10);
 
 figure 
 hold on
-%plot(camminata(:,9),camminata_1(:,1));
-plot(camminata(:,9),camminata_1(:,2));
-%plot(camminata(:,9),camminata_1(:,3));
+%plot(Corsa1(:,9),Corsa1(:,1));
+plot(Corsa1(:,9),Corsa1(:,2));
+%plot(Corsa1(:,9),Corsa1(:,3));
 hold off
 
 figure 
 hold on
-plot(camminata(:,9),camminata_1(:,4));
-%plot(camminata(:,9),camminata_1(:,5));
-%plot(camminata(:,9),camminata_1(:,6));
+plot(Corsa1(:,9),Corsa1(:,4));
+plot(Corsa1(:,9),Corsa1(:,5));
+plot(Corsa1(:,9),Corsa1(:,6));
 hold off
 
 %%

@@ -43,6 +43,7 @@ void TimerHandler()
 }
 
 void setup() {
+  //Serial.begin(115200);
   Accelerometer.begin();
   Gyroscope.begin();
   Temperature.begin();
@@ -70,7 +71,7 @@ void loop() {
     mutex = true;
     if(!accBuffer.isEmpty())
       accelerometerData = accBuffer.pop();
-    if(!accBuffer.isEmpty())
+    if(!gyroBuffer.isEmpty())
       gyroscopeData = gyroBuffer.pop();
     if(!tempBuffer.isEmpty())
       temperatureData = tempBuffer.pop();
@@ -93,6 +94,13 @@ void loop() {
     if(central)
       sensorCharacteristic.writeValue(token);
   }
+  /*
+  Serial.println(accBuffer.size());
+  Serial.println(gyroBuffer.size());
+  Serial.println(tempBuffer.size());
+  Serial.println(timeBuffer.size());
+  Serial.println("-------------");
+  */
 
   analogWrite(LED_BUILTIN, map(accBuffer.size(),0,3000,0,255));
 }
@@ -106,12 +114,18 @@ void updateSensors() {
 
     if(Accelerometer.pop(accelerometerData1))
       accBuffer.unshift(accelerometerData1);
+    else
+      accBuffer.unshift(accelerometerData);
 
     if(Gyroscope.pop(gyroscopeData1))
       gyroBuffer.unshift(gyroscopeData1);
+    else
+      gyroBuffer.unshift(gyroscopeData);
 
     if(Temperature.pop(temperatureData1))
       tempBuffer.unshift(temperatureData1);
+    else
+      tempBuffer.unshift(temperatureData);
 
     timeBuffer.unshift(millis());
     mutex = false;

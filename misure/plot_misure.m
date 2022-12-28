@@ -139,15 +139,32 @@ legend(["gyro x", "gyro y", "gyro z"])
 
 
 figure
-plot(Untitled(:,1))
+plot(Untitled1(:,1))
 hold on
-plot(Untitled(:,2))
-plot(Untitled(:,3))
+plot(Untitled1(:,2))
+plot(Untitled1(:,3))
+xlim([0 1000])
 
 figure
-plot(Untitled(:,4))
+plot(Untitled1(:,4))
 hold on
-plot(Untitled(:,5))
-plot(Untitled(:,6))
+plot(Untitled1(:,5))
+plot(Untitled1(:,6))
+xlim([0 1000])
+
+
+figure
+plot(cyclette2(:,1))
+hold on
+plot(cyclette2(:,2))
+plot(cyclette2(:,3))
+xlim([0 5067])
+
+figure
+plot(cyclette2(:,4))
+hold on
+plot(cyclette2(:,5))
+plot(cyclette2(:,6))
+xlim([0 5067])
 
 

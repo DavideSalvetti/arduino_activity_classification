@@ -8,7 +8,8 @@
 #include "NRF52_MBED_ISR_Timer.h"
 
 #define CIRCULAR_BUFFER_INT_SAFE
-#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+//#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 CircularBuffer<Nano33BLEAccelerometerData, 3000> accBuffer;
 CircularBuffer<Nano33BLEGyroscopeData, 3000> gyroBuffer;
 CircularBuffer<Nano33BLETemperatureData, 3000> tempBuffer;

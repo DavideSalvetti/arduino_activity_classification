@@ -121,4 +121,33 @@ s_test = std(d_test)
 test_1 = test - mean(test,1); 
 test_1 = movmean(test,100);
 
+figure 
+plot(Gyro(:,1))
+hold on
+plot(Gyro(:,2))
+plot(Gyro(:,3))
+xlim([0 5067])
+
+figure 
+plot(Gyro(:,4))
+hold on
+plot(Gyro(:,5))
+plot(Gyro(:,6))
+xlim([0 1000])
+
+legend(["gyro x", "gyro y", "gyro z"])
+
+
+figure
+plot(Untitled(:,1))
+hold on
+plot(Untitled(:,2))
+plot(Untitled(:,3))
+
+figure
+plot(Untitled(:,4))
+hold on
+plot(Untitled(:,5))
+plot(Untitled(:,6))
+
 

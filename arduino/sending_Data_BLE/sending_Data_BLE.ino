@@ -7,8 +7,16 @@
 #include "NRF52_MBED_TimerInterrupt.h"
 #include "NRF52_MBED_ISR_Timer.h"
 
+#define CIRCULAR_BUFFER_INT_SAFE
+//#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+CircularBuffer<Nano33BLEAccelerometerData, 3000> accBuffer;
+CircularBuffer<Nano33BLEGyroscopeData, 3000> gyroBuffer;
+CircularBuffer<Nano33BLETemperatureData, 3000> tempBuffer;
+CircularBuffer<unsigned long, 3000> timeBuffer;
+
 #define HW_TIMER_INTERVAL_MS          1
-#define TIMER_INTERVAL              10L
+#define TIMER_INTERVAL              15L
 
 Nano33BLEAccelerometerData accelerometerData;
 Nano33BLEGyroscopeData gyroscopeData;
@@ -36,6 +44,7 @@ void TimerHandler()
 }
 
 void setup() {
+  //Serial.begin(115200);
   Accelerometer.begin();
   Gyroscope.begin();
   Temperature.begin();
@@ -52,12 +61,24 @@ void setup() {
 
   ITimer.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, TimerHandler);
   ISR_Timer.setInterval(TIMER_INTERVAL,  updateSensors);
+
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
   central = BLE.central();
 
-  if(mutex && central){
+  if(!mutex && !timeBuffer.isEmpty()){
+    mutex = true;
+    if(!accBuffer.isEmpty())
+      accelerometerData = accBuffer.pop();
+    if(!gyroBuffer.isEmpty())
+      gyroscopeData = gyroBuffer.pop();
+    if(!tempBuffer.isEmpty())
+      temperatureData = tempBuffer.pop();
+    currentMillis = timeBuffer.pop();
+    mutex = false;
+
     sprintf(token,"");
 
     sprintf(accstr, "%.3f,%.3f,%.3f,", accelerometerData.x, accelerometerData.y, accelerometerData.z);
@@ -70,21 +91,44 @@ void loop() {
     strcat(token, gyrostr);
     strcat(token, tempstr);
     strcat(token, timestr);
-    
-    sensorCharacteristic.writeValue(token);
 
-    mutex = false;
+    if(central)
+      sensorCharacteristic.writeValue(token);
   }
+  /*
+  Serial.println(accBuffer.size());
+  Serial.println(gyroBuffer.size());
+  Serial.println(tempBuffer.size());
+  Serial.println(timeBuffer.size());
+  Serial.println("-------------");
+  */
+
+  analogWrite(LED_BUILTIN, map(accBuffer.size(),0,3000,0,255));
 }
 
 void updateSensors() {
   if(!mutex){
     mutex = true;
+    Nano33BLEAccelerometerData accelerometerData1;
+    Nano33BLEGyroscopeData gyroscopeData1;
+    Nano33BLETemperatureData temperatureData1;
 
-    Accelerometer.pop(accelerometerData);
-    Gyroscope.pop(gyroscopeData);
-    Temperature.pop(temperatureData);
+    if(Accelerometer.pop(accelerometerData1))
+      accBuffer.unshift(accelerometerData1);
+    else
+      accBuffer.unshift(accelerometerData);
 
-    currentMillis = millis();
+    if(Gyroscope.pop(gyroscopeData1))
+      gyroBuffer.unshift(gyroscopeData1);
+    else
+      gyroBuffer.unshift(gyroscopeData);
+
+    if(Temperature.pop(temperatureData1))
+      tempBuffer.unshift(temperatureData1);
+    else
+      tempBuffer.unshift(temperatureData);
+
+    timeBuffer.unshift(millis());
+    mutex = false;
   }
 }

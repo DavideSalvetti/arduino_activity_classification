@@ -6,14 +6,16 @@
 #include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 
 
-static bool debug_nn = true;
+static bool debug_nn = false;
 static uint16_t run_inference_every_ms = 5000;
 uint16_t buffer_step = 0;
+unsigned long timetowait;
+osThreadId_t main_thread_id;
+
 
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
 CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> bufferCircolare;
 
-static rtos::Thread inference_thread(osPriorityRealtime);
 static rtos::Thread dataread_thread(osPriorityRealtime);
 
 void run_inference_background();
@@ -33,13 +35,12 @@ void setup() {
     ei_printf("ERR: EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME should be equal to 5 (3 acc + 2 gyro)\n");
     return;
   }
-
-  inference_thread.start(mbed::callback(&run_inference_background));
   dataread_thread.start(mbed::callback(&get_IMU_data));
 }
 
-void run_inference_background() {
-  // wait until we have a full buffer
+void loop() {
+  main_thread_id = osThreadGetId();
+    // wait until we have a full buffer
   rtos::Thread::signal_wait(0x1);
 
   // This is a structure that smoothens the output result
@@ -69,7 +70,6 @@ void run_inference_background() {
       ei_printf("ERR: Failed to run classifier (%d)\n", err);
       return;
     }
-
     // print the predictions
     ei_printf("Predictions ");
     ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
@@ -100,6 +100,7 @@ void run_inference_background() {
 void get_IMU_data() {
   float accx, accy, accz, gyrox, gyroy, gyroz;
   while (1) {
+    timetowait = millis();
 
     if (IMU.accelerationAvailable()) {
       IMU.readAcceleration(accx,accy,accz);
@@ -118,13 +119,12 @@ void get_IMU_data() {
       buffer_step++;
     } else if (buffer_step != 2000) {
       buffer_step++;
-      inference_thread.signal_set(0x1);
+      osSignalSet(main_thread_id, 0x1);
     }
-    rtos::Thread::wait(15);
-  }
-}
 
-void loop() {
+    timetowait = millis() - timetowait;
+    rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS-timetowait);
+  }
 }
 
 #if !defined(EI_CLASSIFIER_SENSOR) || EI_CLASSIFIER_SENSOR != EI_CLASSIFIER_SENSOR_FUSION

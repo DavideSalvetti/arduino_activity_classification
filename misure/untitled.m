@@ -1,9 +1,9 @@
 s = serial('COM7','BAU',115200,'terminator','LF');
 fopen(s);
 
-arr2 = nan(100,1);
+arr2 = nan(1000,1);
 
-for i=1:100
+for i=1:1000
     arr2(i) = fscanf(s,'%d');
     pause(0.015)
 end

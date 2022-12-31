@@ -3,14 +3,14 @@
 #include <arduino_activity_classification_inferencing.h>
 #include <Arduino_LSM9DS1.h>
 //#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-//#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+//include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 #include "ArduinoBLE.h"
 
 static bool debug_nn = false;
 static uint16_t run_inference_every_ms = 5000;
 uint16_t buffer_step = 0;
-unsigned long timetowait;
+unsigned long time_to_wait;
 osThreadId_t main_thread_id;
 
 uint8_t classified_id;
@@ -18,10 +18,10 @@ bool send_BLE = false;
 
 
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
-CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> bufferCircolare;
+CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> circular_buffer;
 
-BLEService predictionService("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
-BLEUnsignedCharCharacteristic predictionCharacteristic("3000", BLERead | BLENotify);
+BLEService prediction_service("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
+BLEUnsignedCharCharacteristic prediction_characteristic("3000", BLERead | BLENotify);
 BLEDevice central;
 
 static rtos::Thread dataread_thread(osPriorityRealtime);
@@ -29,7 +29,7 @@ static rtos::Thread BLE_thread(osPriorityNormal);
 
 void run_inference_background();
 void get_IMU_data();
-void updateBLE();
+void update_BLE();
 
 void setup() {
   Serial.begin(115200);
@@ -46,16 +46,16 @@ void setup() {
     return;
   }
   dataread_thread.start(mbed::callback(&get_IMU_data));
-  BLE_thread.start(mbed::callback(&updateBLE));
+  BLE_thread.start(mbed::callback(&update_BLE));
 
   if(!BLE.begin()){
     while(true);
   }
 
   BLE.setLocalName("Activity Classificator");
-  BLE.setAdvertisedService(predictionService);
-  predictionService.addCharacteristic(predictionCharacteristic);
-  BLE.addService(predictionService);
+  BLE.setAdvertisedService(prediction_service);
+  prediction_service.addCharacteristic(prediction_characteristic);
+  BLE.addService(prediction_service);
   BLE.advertise();
 
   pinMode(LED_BUILTIN, OUTPUT);
@@ -72,8 +72,8 @@ void loop() {
   ei_classifier_smooth_init(&smooth, 10 /* no. of readings */, 7 /* min. readings the same */, 0.8 /* min. confidence */, 0.3 /* max anomaly */);
 
   while (1) {
-    for(unsigned short i = 0; i < bufferCircolare.size(); i++){
-      inference_buffer[i] = bufferCircolare[i];
+    for(unsigned short i = 0; i < circular_buffer.size(); i++){
+      inference_buffer[i] = circular_buffer[i];
     }
 
     // Turn the raw buffer in a signal which we can the classify
@@ -123,22 +123,22 @@ void loop() {
   ei_classifier_smooth_free(&smooth);
 }
 void get_IMU_data() {
-  float accx, accy, accz, gyrox, gyroy, gyroz;
+  float acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z;
   while (1) {
-    timetowait = millis();
+    time_to_wait = millis();
 
     if (IMU.accelerationAvailable()) {
-      IMU.readAcceleration(accx,accy,accz);
+      IMU.readAcceleration(acc_x,acc_y,acc_z);
     } 
     if (IMU.gyroscopeAvailable()) {
-       IMU.readGyroscope(gyrox,gyroy,gyroz);
+       IMU.readGyroscope(gyro_x,gyro_y,gyro_z);
     }
 
-    bufferCircolare.push(accx);
-    bufferCircolare.push(accy);
-    bufferCircolare.push(accz);
-    bufferCircolare.push(gyroy);
-    bufferCircolare.push(gyroz);
+    circular_buffer.push(acc_x);
+    circular_buffer.push(acc_y);
+    circular_buffer.push(acc_z);
+    circular_buffer.push(gyro_y);
+    circular_buffer.push(gyro_z);
 
     if (buffer_step < EI_CLASSIFIER_RAW_SAMPLE_COUNT - 1) {
       buffer_step++;
@@ -147,18 +147,18 @@ void get_IMU_data() {
       osSignalSet(main_thread_id, 0x1);
     }
 
-    timetowait = millis() - timetowait;
-    rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS-timetowait);
+    time_to_wait = millis() - time_to_wait;
+    rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS-time_to_wait);
   }
 }
 
-void updateBLE(){
+void update_BLE(){
   while(1){
     central = BLE.central();
 
     if(central && send_BLE){
       digitalWrite(LED_BUILTIN, HIGH);
-      predictionCharacteristic.writeValue(classified_id);
+      prediction_characteristic.writeValue(classified_id);
       send_BLE = false;
     } else{
       digitalWrite(LED_BUILTIN, LOW);

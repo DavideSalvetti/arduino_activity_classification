@@ -3,8 +3,9 @@
 #include <arduino_activity_classification_inferencing.h>
 #include <Arduino_LSM9DS1.h>
 //#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-
+//#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include "ArduinoBLE.h"
 
 static bool debug_nn = false;
 static uint16_t run_inference_every_ms = 5000;
@@ -15,6 +16,11 @@ osThreadId_t main_thread_id;
 
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
 CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> bufferCircolare;
+
+BLEService predictionService("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
+BLE StringCharacteristic predictionCharacteristic("3000", BLERead | BLENotify, 2);
+// BLEUnsignedCharCharacteristic predictionCharacteristic("3000", BLERead | BLENotify);
+BLEDevice central;
 
 static rtos::Thread dataread_thread(osPriorityRealtime);
 
@@ -36,9 +42,23 @@ void setup() {
     return;
   }
   dataread_thread.start(mbed::callback(&get_IMU_data));
+
+  if(!BLE.begin()){
+    while(true);
+  }
+
+  BLE.setLocalName("Activity Classificator");
+  BLE.setAdvertisedService(predictionService);
+  predictionService.addCharacteristic(predictionCharacteristic);
+  BLE.addService(predictionService);
+  BLE.advertise();
+
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
+  central = BLE.central();
+
   main_thread_id = osThreadGetId();
     // wait until we have a full buffer
   rtos::Thread::signal_wait(0x1);
@@ -95,7 +115,25 @@ void loop() {
   }
 
   ei_classifier_smooth_free(&smooth);
-}
+
+  if(central){
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    predictionCharacteristic.writeValue(prediction);
+    //if(prediction == "idle") {
+      //predictionCharacteristic.writeValue(0);
+    //} else {
+      //if(prediction == "walking") {
+        //predictionCharacteristic.writeValue(1);
+        //} else {
+          //if(prediction == "cyclette") {
+            //predictionCharacteristic.writeValue(2);
+            //} else {
+              //predictionCharacteristic.writeValue(3);
+              //}
+          //}
+      //}
+    //}
 
 void get_IMU_data() {
   float accx, accy, accz, gyrox, gyroy, gyroz;

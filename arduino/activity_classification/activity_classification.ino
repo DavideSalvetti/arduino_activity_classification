@@ -3,8 +3,8 @@
 #include <arduino_activity_classification_inferencing.h>
 #include <Arduino_LSM9DS1.h>
 //#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-//#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+//#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 #include "ArduinoBLE.h"
 
 static bool debug_nn = false;
@@ -13,19 +13,23 @@ uint16_t buffer_step = 0;
 unsigned long timetowait;
 osThreadId_t main_thread_id;
 
+uint8_t classified_id;
+bool send_BLE = false;
+
 
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
 CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> bufferCircolare;
 
 BLEService predictionService("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
-BLE StringCharacteristic predictionCharacteristic("3000", BLERead | BLENotify, 2);
-// BLEUnsignedCharCharacteristic predictionCharacteristic("3000", BLERead | BLENotify);
+BLEUnsignedCharCharacteristic predictionCharacteristic("3000", BLERead | BLENotify);
 BLEDevice central;
 
 static rtos::Thread dataread_thread(osPriorityRealtime);
+static rtos::Thread BLE_thread(osPriorityNormal);
 
 void run_inference_background();
 void get_IMU_data();
+void updateBLE();
 
 void setup() {
   Serial.begin(115200);
@@ -42,6 +46,7 @@ void setup() {
     return;
   }
   dataread_thread.start(mbed::callback(&get_IMU_data));
+  BLE_thread.start(mbed::callback(&updateBLE));
 
   if(!BLE.begin()){
     while(true);
@@ -57,8 +62,6 @@ void setup() {
 }
 
 void loop() {
-  central = BLE.central();
-
   main_thread_id = osThreadGetId();
     // wait until we have a full buffer
   rtos::Thread::signal_wait(0x1);
@@ -69,7 +72,6 @@ void loop() {
   ei_classifier_smooth_init(&smooth, 10 /* no. of readings */, 7 /* min. readings the same */, 0.8 /* min. confidence */, 0.3 /* max anomaly */);
 
   while (1) {
-
     for(unsigned short i = 0; i < bufferCircolare.size(); i++){
       inference_buffer[i] = bufferCircolare[i];
     }
@@ -96,9 +98,13 @@ void loop() {
               result.timing.dsp, result.timing.classification, result.timing.anomaly);
     ei_printf(": ");
 
-    // ei_classifier_smooth_update yields the predicted label
-    const char *prediction = ei_classifier_smooth_update(&smooth, &result);
+    const char* prediction = ei_classifier_smooth_update(&smooth, &result);
+    uint8_t prediction_int = ei_classifier_smooth_update_int(&smooth, &result);
+    classified_id = prediction_int;
+    send_BLE = true;
+
     ei_printf("%s ", prediction);
+    ei_printf("%d ", prediction_int);
     // print the cumulative results
     ei_printf(" [ ");
     for (size_t ix = 0; ix < smooth.count_size; ix++) {
@@ -110,31 +116,12 @@ void loop() {
       }
     }
     ei_printf("]\n");
-
+   
     rtos::Thread::wait(run_inference_every_ms);
   }
 
   ei_classifier_smooth_free(&smooth);
-
-  if(central){
-    digitalWrite(LED_BUILTIN, HIGH);
-
-    predictionCharacteristic.writeValue(prediction);
-    //if(prediction == "idle") {
-      //predictionCharacteristic.writeValue(0);
-    //} else {
-      //if(prediction == "walking") {
-        //predictionCharacteristic.writeValue(1);
-        //} else {
-          //if(prediction == "cyclette") {
-            //predictionCharacteristic.writeValue(2);
-            //} else {
-              //predictionCharacteristic.writeValue(3);
-              //}
-          //}
-      //}
-    //}
-
+}
 void get_IMU_data() {
   float accx, accy, accz, gyrox, gyroy, gyroz;
   while (1) {
@@ -162,6 +149,21 @@ void get_IMU_data() {
 
     timetowait = millis() - timetowait;
     rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS-timetowait);
+  }
+}
+
+void updateBLE(){
+  while(1){
+    central = BLE.central();
+
+    if(central && send_BLE){
+      digitalWrite(LED_BUILTIN, HIGH);
+      predictionCharacteristic.writeValue(classified_id);
+      send_BLE = false;
+    } else{
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+    rtos::Thread::wait(10);
   }
 }
 

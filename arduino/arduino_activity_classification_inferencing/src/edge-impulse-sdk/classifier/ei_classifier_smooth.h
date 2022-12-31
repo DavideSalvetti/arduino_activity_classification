@@ -129,6 +129,72 @@ const char* ei_classifier_smooth_update(ei_classifier_smooth_t *smooth, ei_impul
     return "uncertain";
 }
 
+uint8_t ei_classifier_smooth_update_int(ei_classifier_smooth_t *smooth, ei_impulse_result_t *result) {
+    // clear out the count array
+    memset(smooth->count, 0, EI_CLASSIFIER_LABEL_COUNT + 2);
+
+    // roll through the last_readings buffer
+    numpy::roll(smooth->last_readings, smooth->last_readings_size, -1);
+
+    int reading = -1; // uncertain
+
+    // print the predictions
+    // printf("[");
+    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+        if (result->classification[ix].value >= smooth->classifier_confidence) {
+            reading = (int)ix;
+        }
+    }
+#if EI_CLASSIFIER_HAS_ANOMALY == 1
+    if (result->anomaly >= smooth->anomaly_confidence) {
+        reading = -2; // anomaly
+    }
+#endif
+
+    smooth->last_readings[smooth->last_readings_size - 1] = reading;
+
+    // now count last 10 readings and see what we actually see...
+    for (size_t ix = 0; ix < smooth->last_readings_size; ix++) {
+        if (smooth->last_readings[ix] >= 0) {
+            smooth->count[smooth->last_readings[ix]]++;
+        }
+        else if (smooth->last_readings[ix] == -1) { // uncertain
+            smooth->count[EI_CLASSIFIER_LABEL_COUNT]++;
+        }
+        else if (smooth->last_readings[ix] == -2) { // anomaly
+            smooth->count[EI_CLASSIFIER_LABEL_COUNT + 1]++;
+        }
+    }
+
+    // then loop over the count and see which is highest
+    uint8_t top_result = 0;
+    uint8_t top_count = 0;
+    bool met_confidence_threshold = false;
+    uint8_t confidence_threshold = smooth->min_readings_same; // XX% of windows should be the same
+    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT + 2; ix++) {
+        if (smooth->count[ix] > top_count) {
+            top_result = ix;
+            top_count = smooth->count[ix];
+        }
+        if (smooth->count[ix] >= confidence_threshold) {
+            met_confidence_threshold = true;
+        }
+    }
+
+    if (met_confidence_threshold) {
+        if (top_result == EI_CLASSIFIER_LABEL_COUNT) {
+            return 4;
+        }
+        else if (top_result == EI_CLASSIFIER_LABEL_COUNT + 1) {
+            return 5;
+        }
+        else {
+            return top_result;
+        }
+    }
+    return 4;
+}
+
 /**
  * Clear up a smooth structure
  */

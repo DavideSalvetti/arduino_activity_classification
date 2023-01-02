@@ -3,18 +3,19 @@
 #include <arduino_activity_classification_inferencing.h>
 #include <Arduino_LSM9DS1.h>
 //#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-//include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-#include "ArduinoBLE.h"
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+//#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <ArduinoBLE.h>
 
 static bool debug_nn = false;
 static uint16_t run_inference_every_ms = 5000;
 uint16_t buffer_step = 0;
-unsigned long time_to_wait;
+unsigned long time_passed;
 osThreadId_t main_thread_id;
 
-uint8_t classified_id;
+uint8_t prediction_int;
 bool send_BLE = false;
+bool first_connection = true;
 
 
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
@@ -92,18 +93,19 @@ void loop() {
       ei_printf("ERR: Failed to run classifier (%d)\n", err);
       return;
     }
+    /*
     // print the predictions
     ei_printf("Predictions ");
     ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
               result.timing.dsp, result.timing.classification, result.timing.anomaly);
     ei_printf(": ");
+    */
 
-    const char* prediction = ei_classifier_smooth_update(&smooth, &result);
-    uint8_t prediction_int = ei_classifier_smooth_update_int(&smooth, &result);
-    classified_id = prediction_int;
+    const char* prediction = ei_classifier_smooth_update(&smooth, &result, prediction_int);
+
     send_BLE = true;
 
-    ei_printf("%s ", prediction);
+    /*ei_printf("%s ", prediction);
     ei_printf("%d ", prediction_int);
     // print the cumulative results
     ei_printf(" [ ");
@@ -116,7 +118,7 @@ void loop() {
       }
     }
     ei_printf("]\n");
-   
+   */
     rtos::Thread::wait(run_inference_every_ms);
   }
 
@@ -125,8 +127,8 @@ void loop() {
 void get_IMU_data() {
   float acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z;
   while (1) {
-    time_to_wait = millis();
-
+    time_passed = millis();
+    Serial.println(time_passed);
     if (IMU.accelerationAvailable()) {
       IMU.readAcceleration(acc_x,acc_y,acc_z);
     } 
@@ -147,23 +149,35 @@ void get_IMU_data() {
       osSignalSet(main_thread_id, 0x1);
     }
 
-    time_to_wait = millis() - time_to_wait;
-    rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS-time_to_wait);
+    time_passed = millis() - time_passed;
+
+    if(time_passed <0) //handle overflow situation
+      time_passed = 0 - time_passed;
+
+    if(time_passed > EI_CLASSIFIER_INTERVAL_MS)
+      time_passed = EI_CLASSIFIER_INTERVAL_MS;
+
+    rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS - time_passed);
   }
 }
 
 void update_BLE(){
   while(1){
-    central = BLE.central();
-
-    if(central && send_BLE){
-      digitalWrite(LED_BUILTIN, HIGH);
-      prediction_characteristic.writeValue(classified_id);
-      send_BLE = false;
+    if(BLE.connected()){
+      if(first_connection){
+        central = BLE.central();
+        first_connection = false;
+      }
+      if(send_BLE){
+        prediction_characteristic.writeValue(prediction_int);
+        rtos::Thread::wait(run_inference_every_ms);
+      } else{
+        rtos::Thread::wait(run_inference_every_ms/10);
+      }
     } else{
-      digitalWrite(LED_BUILTIN, LOW);
+      first_connection = true;
+      rtos::Thread::wait(1000);
     }
-    rtos::Thread::wait(10);
   }
 }
 

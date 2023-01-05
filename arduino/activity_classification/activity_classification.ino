@@ -21,12 +21,12 @@ bool first_connection = true;
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
 CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> circular_buffer;
 
-BLEService prediction_service("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
+BLEService prediction_service("e2e65ffc-5687-4cbe-8f2d-db76265f269a");
 BLEUnsignedCharCharacteristic prediction_characteristic("3000", BLERead | BLENotify);
 BLEDevice central;
 
 static rtos::Thread dataread_thread(osPriorityRealtime);
-static rtos::Thread BLE_thread(osPriorityNormal);
+static rtos::Thread BLE_thread(osPriorityBelowNormal);
 
 void run_inference_background();
 void get_IMU_data();
@@ -93,19 +93,19 @@ void loop() {
       ei_printf("ERR: Failed to run classifier (%d)\n", err);
       return;
     }
-    /*
+  
     // print the predictions
     ei_printf("Predictions ");
     ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
               result.timing.dsp, result.timing.classification, result.timing.anomaly);
     ei_printf(": ");
-    */
+
 
     const char* prediction = ei_classifier_smooth_update(&smooth, &result, prediction_int);
 
     send_BLE = true;
 
-    /*ei_printf("%s ", prediction);
+    ei_printf("%s ", prediction);
     ei_printf("%d ", prediction_int);
     // print the cumulative results
     ei_printf(" [ ");
@@ -118,7 +118,7 @@ void loop() {
       }
     }
     ei_printf("]\n");
-   */
+   
     rtos::Thread::wait(run_inference_every_ms);
   }
 
@@ -128,7 +128,7 @@ void get_IMU_data() {
   float acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z;
   while (1) {
     time_passed = millis();
-    Serial.println(time_passed);
+
     if (IMU.accelerationAvailable()) {
       IMU.readAcceleration(acc_x,acc_y,acc_z);
     } 

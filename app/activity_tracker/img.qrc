@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/img">
+        <file alias="bicycle.png">img/bicycle.png</file>
+        <file alias="jumping-rope.png">img/jumping-rope.png</file>
+        <file alias="relaxing-walk.png">img/relaxing-walk.png</file>
+        <file alias="run.png">img/run.png</file>
+        <file alias="walk.png">img/walk.png</file>
+        <file alias="walking.png">img/walking.png</file>
+        <file alias="standing-up-man.png">img/standing-up-man-.png</file>
+    </qresource>
+</RCC>

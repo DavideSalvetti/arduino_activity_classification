@@ -12,3 +12,4 @@ Inside this project, icons from <a href="https://www.flaticon.com/">Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/walk" title="walk icons">Walk icons created by DinosoftLabs - Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/run" title="run icons">Run icons created by Freepik - Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/cycling" title="cycling icons">Cycling icons created by Freepik - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/man" title="man icons">Man icons created by Freepik - Flaticon</a>

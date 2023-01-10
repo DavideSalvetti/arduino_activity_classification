@@ -131,6 +131,11 @@ int DeviceController::getDeviceStatus() const
     return value;
 }
 
+int DeviceController::getActivityPrediction() const
+{
+    return activityPrediction;
+}
+
 void DeviceController::deviceConnected()
 {
     qDebug() << "Device Connected";
@@ -246,7 +251,13 @@ void DeviceController::addLowEnergyService(const QBluetoothUuid &serviceUuid)
     QBluetoothUuid uuid = service->serviceUuid();
     qDebug() << "Service Found: " + uuid.toString();
 
-    if (uuid.toString() == "{e2e65ffc-5687-4cbe-8f2d-db76265f269f}") {
+    if (uuid.toString() == "{e2e65ffc-5687-4cbe-8f2d-db76265f269f}" ||
+        uuid.toString() == "{e2e65ffc-5687-4cbe-8f2d-db76265f269a}") {
+
+        if (uuid.toString() == "{e2e65ffc-5687-4cbe-8f2d-db76265f269f}") {
+            qDebug() << "Data Aquisition Application";
+        } else
+            qDebug() << "Inference Application";
 
         deviceService = service;
         qDebug() << "Communication Service Found! State:" << deviceService->state();
@@ -340,7 +351,14 @@ void DeviceController::characteristicHasChanged(const QLowEnergyCharacteristic &
 {
     qDebug() << "CharacteristicChanged - " + characteristic.uuid().toString() + " new value: " + newValue + " newValueLenght:" + newValue.length();
 
-    emit characteristicChanged(characteristic.uuid().toString(), newValue);
+    if (0) {
+
+        activityPrediction = newValue.toInt();
+
+        emit activityPredictionChanged(activityPrediction);
+    } else {
+        emit characteristicChanged(characteristic.uuid().toString(), newValue);
+    }
 }
 
 void DeviceController::characteristicHasBeenWritten(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)

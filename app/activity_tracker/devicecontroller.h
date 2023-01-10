@@ -9,13 +9,14 @@
 
 #define DEVICE_ADDRESS QString("C3:4C:C0:10:83:DC")
 
-#define SERVICE_UUID QString("e2e65ffc-5687-4cbe-8f2d-db76265f269f")
-#define CHARACTERISTIC_UUID QString("00002a00-0000-1000-8000-00805f9b34fb")
+#define DATA_SERVICE_UUID QString("{e2e65ffc-5687-4cbe-8f2d-db76265f269f}")
+#define CLASSIFICATION_SERVICE_UUID QString("{e2e65ffc-5687-4cbe-8f2d-db76265f269a}");
 
 class DeviceController : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int deviceStatus READ getDeviceStatus NOTIFY deviceStatusChanged)
+    Q_PROPERTY(int activityPrediction READ getActivityPrediction NOTIFY activityPredictionChanged)
 public:
     explicit DeviceController(QObject *parent = nullptr);
 
@@ -25,6 +26,7 @@ public:
 
 
     int getDeviceStatus() const;
+    int getActivityPrediction() const;
 
     enum DeviceStatus {
         DISCONNECTED = 0,
@@ -55,7 +57,7 @@ private slots:
 
 signals:
     void deviceStatusChanged(int status);
-
+    void activityPredictionChanged(int activityPrediction);
     void characteristicChanged(QString uuid, QByteArray newValue);
 
 
@@ -67,6 +69,7 @@ private:
     QLowEnergyCharacteristic readCharacteristic;
 
     DeviceStatus deviceStatus;
+    int activityPrediction;
 
 };
 

@@ -2,8 +2,8 @@
 
 #include <arduino_activity_classification_inferencing.h>
 #include <Arduino_LSM9DS1.h>
-//#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+//#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 //#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 #include <ArduinoBLE.h>
 
@@ -120,6 +120,7 @@ void loop() {
 
   ei_classifier_smooth_free(&smooth);
 }
+
 void get_IMU_data() {
   float acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z;
   while (1) {

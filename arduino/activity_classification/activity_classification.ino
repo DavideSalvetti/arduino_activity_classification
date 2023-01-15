@@ -58,8 +58,6 @@ void setup() {
   prediction_service.addCharacteristic(prediction_characteristic);
   BLE.addService(prediction_service);
   BLE.advertise();
-
-  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
@@ -100,9 +98,7 @@ void loop() {
               result.timing.dsp, result.timing.classification, result.timing.anomaly);
     ei_printf(": ");
 
-
     const char* prediction = ei_classifier_smooth_update(&smooth, &result, prediction_int);
-
     send_BLE = true;
 
     ei_printf("%s ", prediction);
@@ -170,6 +166,7 @@ void update_BLE(){
       }
       if(send_BLE){
         prediction_characteristic.writeValue(prediction_int);
+        send_BLE = false;
         rtos::Thread::wait(run_inference_every_ms);
       } else{
         rtos::Thread::wait(run_inference_every_ms/10);

@@ -2,8 +2,8 @@
 
 #include <arduino_activity_classification_inferencing.h>
 #include <Arduino_LSM9DS1.h>
-#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-//#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+//#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 //#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 #include <ArduinoBLE.h>
 
@@ -15,8 +15,6 @@ osThreadId_t main_thread_id;
 
 uint8_t prediction_int;
 bool send_BLE = false;
-bool first_connection = true;
-
 
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
 CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> circular_buffer;
@@ -58,8 +56,6 @@ void setup() {
   prediction_service.addCharacteristic(prediction_characteristic);
   BLE.addService(prediction_service);
   BLE.advertise();
-
-  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
@@ -163,21 +159,12 @@ void get_IMU_data() {
 
 void update_BLE(){
   while(1){
-    if(BLE.connected()){
-      if(first_connection){
-        central = BLE.central();
-        first_connection = false;
-      }
-      if(send_BLE){
-        prediction_characteristic.writeValue(prediction_int);
-        rtos::Thread::wait(run_inference_every_ms);
-      } else{
-        rtos::Thread::wait(run_inference_every_ms/10);
-      }
-    } else{
-      first_connection = true;
-      rtos::Thread::wait(1000);
+    central = BLE.central();
+    if(BLE.connected() && send_BLE){
+      prediction_characteristic.writeValue(prediction_int);
+      send_BLE = false;
     }
+    rtos::Thread::wait(10);
   }
 }
 

@@ -6,6 +6,7 @@ DeviceController::DeviceController(QObject *parent)
     : QObject{parent}
 {
     deviceStatus = DISCONNECTED;
+    task = NONE;
 
     discoveryAgent = new QBluetoothDeviceDiscoveryAgent();
 
@@ -14,9 +15,6 @@ DeviceController::DeviceController(QObject *parent)
             this, &DeviceController::addDevice);
     connect(discoveryAgent, QOverload<QBluetoothDeviceDiscoveryAgent::Error>::of(&QBluetoothDeviceDiscoveryAgent::error),
             this, &DeviceController::deviceScanError);
-    connect(discoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished,
-            this, &DeviceController::deviceScanFinished);
-
 }
 
 /**
@@ -47,6 +45,9 @@ void DeviceController::deviceScanError(QBluetoothDeviceDiscoveryAgent::Error err
 
     deviceStatus = DISCONNECTED;
     emit deviceStatusChanged(deviceStatus);
+
+    task = NONE;
+    emit  taskChanged(getTask());
 }
 
 /**
@@ -56,23 +57,6 @@ void DeviceController::deviceScanError(QBluetoothDeviceDiscoveryAgent::Error err
 void DeviceController::addDevice(const QBluetoothDeviceInfo &info)
 {
     qDebug() << "Device Found: " + info.name() + " Address: " + info.address().toString() ;
-}
-
-/**
- * @brief device scan finished
- */
-void DeviceController::deviceScanFinished()
-{
-    //    deviceList.clear();
-
-    //    deviceList = discoveryAgent->discoveredDevices();
-
-    //    if (deviceList.isEmpty())
-    //        qDebug() << "Bluetooth Devices Not Found!";
-    //    else
-    //        qDebug() << "Device Scan Finished!";
-
-    //    emit devicesUpdated();
 }
 
 /**
@@ -134,6 +118,19 @@ int DeviceController::getDeviceStatus() const
 int DeviceController::getActivityPrediction() const
 {
     return activityPrediction;
+}
+
+/**
+ * @brief getter of @param task
+ * @return
+ */
+int DeviceController::getTask() const
+{
+    if (task == NONE) return 0;
+    if (task == DATA_ACQUISITION) return 1;
+    if (task == ACTIVITY_PREDICTION) return 2;
+
+    return 0;
 }
 
 void DeviceController::deviceConnected()
@@ -200,6 +197,9 @@ void DeviceController::deviceDisconnected()
 
     deviceStatus = DISCONNECTED;
     emit deviceStatusChanged(deviceStatus);
+
+    task = NONE;
+    emit  taskChanged(getTask());
 }
 
 void DeviceController::errorReceived(QLowEnergyController::Error error)
@@ -238,6 +238,9 @@ void DeviceController::errorReceived(QLowEnergyController::Error error)
 
     deviceStatus = DISCONNECTED;
     emit deviceStatusChanged(deviceStatus);
+
+    task = NONE;
+    emit  taskChanged(getTask());
 }
 
 void DeviceController::addLowEnergyService(const QBluetoothUuid &serviceUuid)
@@ -255,9 +258,14 @@ void DeviceController::addLowEnergyService(const QBluetoothUuid &serviceUuid)
         uuid.toString() == "{e2e65ffc-5687-4cbe-8f2d-db76265f269a}") {
 
         if (uuid.toString() == "{e2e65ffc-5687-4cbe-8f2d-db76265f269f}") {
+            task = DATA_ACQUISITION;
             qDebug() << "Data Aquisition Application";
-        } else
+        } else {
             qDebug() << "Inference Application";
+            task = ACTIVITY_PREDICTION;
+        }
+
+        emit taskChanged(getTask());
 
         deviceService = service;
         qDebug() << "Communication Service Found! State:" << deviceService->state();
@@ -351,10 +359,8 @@ void DeviceController::characteristicHasChanged(const QLowEnergyCharacteristic &
 {
     qDebug() << "CharacteristicChanged - " + characteristic.uuid().toString() + " new value: " + newValue + " newValueLenght:" + newValue.length();
 
-    if (0) {
-
-        activityPrediction = newValue.toInt();
-
+    if (task == ACTIVITY_PREDICTION) {
+        activityPrediction = newValue.at(0);
         emit activityPredictionChanged(activityPrediction);
     } else {
         emit characteristicChanged(characteristic.uuid().toString(), newValue);

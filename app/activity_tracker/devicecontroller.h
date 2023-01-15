@@ -17,6 +17,7 @@ class DeviceController : public QObject
     Q_OBJECT
     Q_PROPERTY(int deviceStatus READ getDeviceStatus NOTIFY deviceStatusChanged)
     Q_PROPERTY(int activityPrediction READ getActivityPrediction NOTIFY activityPredictionChanged)
+    Q_PROPERTY(int task READ getTask NOTIFY taskChanged)
 public:
     explicit DeviceController(QObject *parent = nullptr);
 
@@ -27,6 +28,7 @@ public:
 
     int getDeviceStatus() const;
     int getActivityPrediction() const;
+    int getTask() const;
 
     enum DeviceStatus {
         DISCONNECTED = 0,
@@ -34,12 +36,16 @@ public:
         CONNECTED = 2
     };
 
+    enum Task {
+        NONE = 0,
+        DATA_ACQUISITION,
+        ACTIVITY_PREDICTION
+    };
 
 
 private slots:
     void addDevice(const QBluetoothDeviceInfo&);
     void deviceScanError(QBluetoothDeviceDiscoveryAgent::Error);
-    void deviceScanFinished();
 
     void deviceConnected();
     void deviceDisconnected();
@@ -59,6 +65,7 @@ signals:
     void deviceStatusChanged(int status);
     void activityPredictionChanged(int activityPrediction);
     void characteristicChanged(QString uuid, QByteArray newValue);
+    void taskChanged(int task);
 
 
 private:
@@ -70,6 +77,7 @@ private:
 
     DeviceStatus deviceStatus;
     int activityPrediction;
+    Task task;
 
 };
 

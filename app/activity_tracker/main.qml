@@ -18,25 +18,61 @@ ApplicationWindow {
         function onDeviceStatusChanged(status)  {
             console.log("Device Status Changed! " + status)
 
-            if (status == 0)
+            if (status === 0)
                 commentId.text = "Disconnected"
-            else if (status == 1)
+            else if (status === 1)
                 commentId.text = "Connecting"
-            else if (status == 2)
+            else if (status === 2)
                 commentId.text = "Connected"
 
+        }
+
+        function onTaskChanged(task) {
+            console.log("Task: " + task)
+
+            if (task === 0) {
+                title.text = "Arduino Activity Tracker App"
+                frameId.state = "idle_mode"
+            } else if (task === 1) {
+                title.text = "Data Acquisition Mode"
+                frameId.state = "acquisition_mode"
+            } else if (task === 2) {
+                title.text = "Activity Prediction Mode"
+                frameId.state = "activity_mode"
+            }
+        }
+
+        function onActivityPredictionChanged(prediction) {
+            predictionItem.prediction = prediction
         }
     }
 
     Frame {
+        id: frameId
 
         anchors.fill: parent
 
-        //color: "white"
-
-        Column {
+        Label {
+            id: title
             anchors {
                 top: parent.top
+                left: parent.left
+                right: parent.right
+                margins: 10
+            }
+
+            text: "Arduino Activity Tracker App"
+            font.bold: true
+            font.pointSize: 16
+
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment:  Text.AlignVCenter
+        }
+
+        Column {
+            id: devicesAvailable
+            anchors {
+                top: title.bottom
                 left: parent.left
                 bottom: connectButton.top
                 margins: 10
@@ -68,13 +104,30 @@ ApplicationWindow {
 
 
         Label {
+            id: secondsRecordedId
             anchors {
                 right: parent.right
-                top: parent.top
+                top: title.bottom
+                margins: 10
+            }
+            opacity: 0
+
+            text: qsTr("Seconds recorded:") + " " + masterController.ui_fileManager.seconds
+
+        }
+
+        PredictionItem {
+            id: predictionItem
+
+            anchors {
+                top: title.bottom
+                left: parent.left
+                right: parent.right
+                bottom: connectButton.top
                 margins: 10
             }
 
-            text: qsTr("Seconds recorded:") + " " + masterController.ui_fileManager.seconds
+            opacity: 0
 
         }
 
@@ -82,11 +135,8 @@ ApplicationWindow {
         Button {
             id: connectButton
 
-            anchors {
-                bottom: parent.bottom
-                left: parent.left
-                margins: 10
-            }
+            x: parent.width/2 - width/2
+            y: parent.height - height - 10
 
             highlighted: true
 
@@ -136,6 +186,8 @@ ApplicationWindow {
                 margins: 10
             }
 
+            opacity: 0
+
             highlighted: true
 
             text: masterController.ui_fileManager.recording == false ? "Record" : "Stop Record"
@@ -149,6 +201,126 @@ ApplicationWindow {
                     masterController.ui_fileManager.startRecording()
             }
         }
+
+
+        states: [
+            State {
+                name: "idle_mode"
+                PropertyChanges {
+                    target: devicesAvailable
+                    opacity: 1
+                }
+                PropertyChanges {
+                    target: connectButton
+                    x: parent.width/2 - connectButton.width/2
+                }
+                PropertyChanges {
+                    target: recordButton
+                    opacity: 0
+                }
+                PropertyChanges {
+                    target: secondsRecordedId
+                    opacity: 0
+                }
+                PropertyChanges {
+                    target: predictionItem
+                    opacity: 0
+                }
+            },
+            State {
+                name: "acquisition_mode"
+                PropertyChanges {
+                    target: devicesAvailable
+                    opacity: 0
+                }
+                PropertyChanges {
+                    target: connectButton
+                    x: 10
+                }
+                PropertyChanges {
+                    target: recordButton
+                    opacity: 1
+                }
+                PropertyChanges {
+                    target: secondsRecordedId
+                    opacity: 1
+                }
+            },
+            State {
+                name: "activity_mode"
+                PropertyChanges {
+                    target: devicesAvailable
+                    opacity: 0
+                }
+                PropertyChanges {
+                    target: predictionItem
+                    opacity: 1
+                }
+            }
+        ]
+
+        transitions: [
+            Transition {
+                from: "idle_mode"
+                to: "acquisition_mode"
+                reversible: true
+
+
+                NumberAnimation {
+                    target: connectButton
+                    property: "x"
+                    duration: 500
+                    easing.type: Easing.Linear
+                }
+
+                NumberAnimation {
+                    target: recordButton
+                    property: "opacity"
+                    duration: 500
+                    easing.type: Easing.Linear
+                }
+
+                NumberAnimation {
+                    target: secondsRecordedId
+                    property: "opacity"
+                    duration: 500
+                    easing.type: Easing.Linear
+                }
+
+                NumberAnimation {
+                    target: devicesAvailable
+                    property: "opacity"
+                    duration: 500
+                    easing.type: Easing.Linear
+                }
+
+            },
+            Transition {
+                from: "idle_mode"
+                to: "activity_mdoe"
+                reversible: true
+
+                NumberAnimation {
+                    target: predictionItem
+                    property: "opacity"
+                    duration: 500
+                    easing.type: Easing.Linear
+                }
+
+                NumberAnimation {
+                    target: devicesAvailable
+                    property: "opacity"
+                    duration: 500
+                    easing.type: Easing.Linear
+                }
+
+            }
+
+        ]
+    }
+
+    Component.onCompleted: {
+        frameId.state = "idle_mode"
     }
 
 }

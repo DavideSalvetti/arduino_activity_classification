@@ -7,5 +7,6 @@
         <file alias="walk.png">img/walk.png</file>
         <file alias="walking.png">img/walking.png</file>
         <file alias="standing-up-man.png">img/standing-up-man-.png</file>
+        <file alias="question-mark.png">img/question-mark.png</file>
     </qresource>
 </RCC>

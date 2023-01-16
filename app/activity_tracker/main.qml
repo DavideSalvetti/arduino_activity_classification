@@ -42,9 +42,9 @@ ApplicationWindow {
             }
         }
 
-        function onActivityPredictionChanged(prediction) {
-            predictionItem.prediction = prediction
-        }
+        //        function onActivityPredictionChanged(prediction) {
+        //            predictionItem.prediction = prediction
+        //        }
     }
 
     Frame {
@@ -116,6 +116,76 @@ ApplicationWindow {
 
         }
 
+        ListView {
+            id: previousActivity
+            anchors {
+                bottom: connectButton.top
+                left: parent.left
+            }
+            height: parent.height / 5
+            width: parent.width / 4
+
+            opacity: 0
+
+            orientation: Qt.Horizontal
+
+            model: masterController.ui_activityObserver.previousPrediction
+            delegate:  Rectangle {
+
+                color: "transparent"
+
+                width: parent.height
+                height: parent.height
+
+
+                Rectangle {
+                    id: predictionItemId
+                    anchors {
+                        centerIn: parent
+                    }
+
+                    width: parent.height
+                    height: parent.height
+
+                    color: "green"
+                    radius: 100
+                }
+
+                Rectangle {
+                    anchors {
+                        centerIn: predictionItemId
+                    }
+
+                    radius:  100
+                    color: "#023535"
+
+                    width: predictionItemId.height - 10
+                    height: predictionItemId.height - 10
+
+                    Image {
+                        id: imagePredictionId
+                        anchors.centerIn: parent
+                        width: parent.height
+                        height: parent.height
+
+                        source: getSource()
+
+                        function getSource() {
+                            if (modelData === 0)
+                                return "qrc:/img/bicycle.png"
+                            if (modelData === 1)
+                                return "qrc:/img/standing-up-man.png"
+                            if (modelData === 2)
+                                return "qrc:/img/walk.png"
+
+                            return "qrc:/img/question-mark.png"
+                        }
+                    }
+                }
+            }
+
+        }
+
         PredictionItem {
             id: predictionItem
 
@@ -127,6 +197,7 @@ ApplicationWindow {
                 margins: 10
             }
 
+            prediction: masterController.ui_activityObserver.activityPrediction
             opacity: 0
 
         }
@@ -261,7 +332,7 @@ ApplicationWindow {
 
         transitions: [
             Transition {
-                from: "idle_mode"
+                from: "*"
                 to: "acquisition_mode"
                 reversible: true
 
@@ -296,7 +367,7 @@ ApplicationWindow {
 
             },
             Transition {
-                from: "idle_mode"
+                from: "*"
                 to: "activity_mdoe"
                 reversible: true
 

@@ -18,7 +18,7 @@ public:
     int getSeconds() const;
 
 public slots:
-    void onCharacteristicUpdated(QString uuid, QByteArray newValue);
+    void onCharacteristicUpdated(int task, QString uuid, QByteArray newValue);
 
 signals:
     void recordingChanged();

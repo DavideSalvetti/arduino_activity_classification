@@ -77,9 +77,12 @@ int FileManager::getSeconds() const
     return seconds;
 }
 
-void FileManager::onCharacteristicUpdated(QString uuid, QByteArray newValue)
+void FileManager::onCharacteristicUpdated(int task, QString uuid, QByteArray newValue)
 {
     Q_UNUSED(uuid)
+
+    if (task != 1)
+        return;
 
     if (recording) {
 

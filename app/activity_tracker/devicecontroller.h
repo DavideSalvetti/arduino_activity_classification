@@ -16,7 +16,6 @@ class DeviceController : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int deviceStatus READ getDeviceStatus NOTIFY deviceStatusChanged)
-    Q_PROPERTY(int activityPrediction READ getActivityPrediction NOTIFY activityPredictionChanged)
     Q_PROPERTY(int task READ getTask NOTIFY taskChanged)
 public:
     explicit DeviceController(QObject *parent = nullptr);
@@ -27,7 +26,6 @@ public:
 
 
     int getDeviceStatus() const;
-    int getActivityPrediction() const;
     int getTask() const;
 
     enum DeviceStatus {
@@ -63,8 +61,8 @@ private slots:
 
 signals:
     void deviceStatusChanged(int status);
-    void activityPredictionChanged(int activityPrediction);
-    void characteristicChanged(QString uuid, QByteArray newValue);
+
+    void characteristicChanged(int task, QString uuid, QByteArray newValue);
     void taskChanged(int task);
 
 
@@ -76,7 +74,7 @@ private:
     QLowEnergyCharacteristic readCharacteristic;
 
     DeviceStatus deviceStatus;
-    int activityPrediction;
+
     Task task;
 
 };

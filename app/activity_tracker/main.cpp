@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<MasterController>("org.activitytracker.controllers", 1, 0, "MasterController");
     qmlRegisterUncreatableType<DeviceController>("org.activitytracker.controllers", 1, 0, "DeviceController", "Uncreatable type from QML.");
     qmlRegisterUncreatableType<FileManager>("org.activitytracker.controllers", 1, 0, "FileManager", "Uncreatable type from QML.");
+    qmlRegisterUncreatableType<ActivityObserver>("org.activitytracker.controllers", 1, 0, "ActivityObserver", "Uncreatable type from QML.");
 
     QQmlApplicationEngine engine;
 

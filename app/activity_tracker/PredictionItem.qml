@@ -14,9 +14,12 @@ Item {
             if (state != "idle")
                 state = "idle"
         } else if (prediction === 2) {
+            if (state != "jump")
+                state = "jump"
+        }else if (prediction === 3) {
             if (state != "walking")
                 state = "walking"
-        }else {
+        } else {
             if (state != "unknown")
                 state = "unknown"
         }
@@ -26,6 +29,7 @@ Item {
         anchors.fill: parent
 
         color: "transparent"
+
         Label {
             id: classId
             anchors {
@@ -161,6 +165,21 @@ Item {
             PropertyChanges {
                 target: classId
                 text: "Walking"
+            }
+        },
+        State {
+            name: "jump"
+            PropertyChanges {
+                target: imagePredictionId
+                source: "qrc:/img/jumping-rope.png"
+            }
+            PropertyChanges {
+                target: predictionItemId
+                color: "green"
+            }
+            PropertyChanges {
+                target: classId
+                text: "Jumping"
             }
         }
     ]

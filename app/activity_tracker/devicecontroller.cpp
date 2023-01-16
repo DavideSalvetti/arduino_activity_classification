@@ -115,11 +115,6 @@ int DeviceController::getDeviceStatus() const
     return value;
 }
 
-int DeviceController::getActivityPrediction() const
-{
-    return activityPrediction;
-}
-
 /**
  * @brief getter of @param task
  * @return
@@ -359,12 +354,7 @@ void DeviceController::characteristicHasChanged(const QLowEnergyCharacteristic &
 {
     qDebug() << "CharacteristicChanged - " + characteristic.uuid().toString() + " new value: " + newValue + " newValueLenght:" + newValue.length();
 
-    if (task == ACTIVITY_PREDICTION) {
-        activityPrediction = newValue.at(0);
-        emit activityPredictionChanged(activityPrediction);
-    } else {
-        emit characteristicChanged(characteristic.uuid().toString(), newValue);
-    }
+    emit characteristicChanged(task, characteristic.uuid().toString(), newValue);
 }
 
 void DeviceController::characteristicHasBeenWritten(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)

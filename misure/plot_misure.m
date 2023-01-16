@@ -113,7 +113,7 @@ m_150=mean(d_150)
 s_150 = std(d_150)
 
 figure
-d_test = diff(test(:,9));
+d_test = diff(jump1(:,9));
 plot(d_test,'o');
 m_test=mean(d_test)
 s_test = std(d_test)
@@ -154,17 +154,23 @@ xlim([0 1000])
 
 
 figure
-plot(cyclette2(:,1))
+plot(jump5(:,1))
 hold on
-plot(cyclette2(:,2))
-plot(cyclette2(:,3))
-xlim([0 5067])
+plot(jump5(:,2))
+plot(jump5(:,3))
+xlim([2467 5067])
 
 figure
-plot(cyclette2(:,4))
+plot(jump5(:,4))
 hold on
-plot(cyclette2(:,5))
-plot(cyclette2(:,6))
-xlim([0 5067])
+plot(jump5(:,5))
+plot(jump5(:,6))
+xlim([2467 5067])
+
+
+T = array2table(jump3(2267:5067, :))
+T.Properties.VariableNames(1:9) = {'acc x','acc y','acc z',...
+    'gyro x','gyro y','gyro z','temp','humidity','timestamp'}
+writetable(T,'jump.16_01_2023_09_44.csv')
 
 

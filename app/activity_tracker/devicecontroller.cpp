@@ -352,23 +352,23 @@ void DeviceController::serviceDetailsDiscovered(QLowEnergyService::ServiceState 
 
 void DeviceController::characteristicHasChanged(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)
 {
-    qDebug() << "CharacteristicChanged - " + characteristic.uuid().toString() + " new value: " + newValue + " newValueLenght:" + newValue.length();
+    //qDebug() << "CharacteristicChanged - " + characteristic.uuid().toString() + " new value: " + newValue + " newValueLenght:" + newValue.length();
 
     emit characteristicChanged(task, characteristic.uuid().toString(), newValue);
 }
 
 void DeviceController::characteristicHasBeenWritten(const QLowEnergyCharacteristic &characteristic, const QByteArray &newValue)
 {
-    qDebug() << "CharacteristicWritten - " + characteristic.uuid().toString() + " new value: " + newValue;
+    //qDebug() << "CharacteristicWritten - " + characteristic.uuid().toString() + " new value: " + newValue;
 }
 
 void DeviceController::characteristicHasBeenRead(const QLowEnergyCharacteristic &characteristic, const QByteArray &value)
 {
-    qDebug() << "CharacteristicRead - " + characteristic.uuid().toString() + " new value: " + value;
+    //qDebug() << "CharacteristicRead - " + characteristic.uuid().toString() + " new value: " + value;
 }
 
 void DeviceController::descriptorHasBeenWritten(const QLowEnergyDescriptor &descriptor, const QByteArray &newValue)
 {
-    qDebug() << "DescriptorWritten - " + descriptor.uuid().toString() + " new value: " + newValue;
+    //qDebug() << "DescriptorWritten - " + descriptor.uuid().toString() + " new value: " + newValue;
 }
 

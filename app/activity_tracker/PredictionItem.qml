@@ -1,6 +1,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtGraphicalEffects 1.15
+import QtQuick.Controls.Material 2.12
+import QtQuick.Controls.Material.impl 2.12
 
 Item {
 
@@ -85,12 +87,13 @@ Item {
         }
 
         Rectangle {
+            id: rect
             anchors {
                 centerIn: predictionItemId
             }
 
             radius:  100
-            color: "#023535"
+            color: Material.backgroundColor
 
             width: predictionItemId.height - 20
             height: predictionItemId.height - 20

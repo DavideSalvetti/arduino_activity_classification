@@ -93,9 +93,6 @@ void FileManager::onCharacteristicUpdated(int task, QString uuid, QByteArray new
         seconds = millis / 1000;
 
         emit secondsChanged();
-
-        if (seconds >= 76)
-            stopRecording();
     }
 }
 

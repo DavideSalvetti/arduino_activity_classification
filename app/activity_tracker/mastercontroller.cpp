@@ -13,6 +13,9 @@ MasterController::MasterController(QObject *parent)
 
     connect(deviceController, &DeviceController::characteristicChanged,
             activityObserver, &ActivityObserver::onCharacteristicUpdated);
+
+    connect(deviceController, &DeviceController::characteristicChanged,
+            chartViewController, &ChartViewController::onCharacteristicUpdated);
 }
 
 DeviceController *MasterController::getDeviceController()

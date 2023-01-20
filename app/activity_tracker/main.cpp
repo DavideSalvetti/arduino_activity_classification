@@ -1,4 +1,4 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QLoggingCategory>
 #include <QQmlContext>
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     QLoggingCategory::setFilterRules(QStringLiteral("qt.bluetooth* = true"));
 
 
@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<DeviceController>("org.activitytracker.controllers", 1, 0, "DeviceController", "Uncreatable type from QML.");
     qmlRegisterUncreatableType<FileManager>("org.activitytracker.controllers", 1, 0, "FileManager", "Uncreatable type from QML.");
     qmlRegisterUncreatableType<ActivityObserver>("org.activitytracker.controllers", 1, 0, "ActivityObserver", "Uncreatable type from QML.");
+    qmlRegisterUncreatableType<Channel>("org.activitytracker.bean", 1, 0, "Channel", "Uncreatable type from QML.");
 
     QQmlApplicationEngine engine;
 

@@ -2,9 +2,10 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Controls.Material 2.12
+import QtQuick.Controls.Material.impl 2.12
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-
+import QtCharts 2.1
 
 ApplicationWindow {
     width: 640
@@ -36,15 +37,13 @@ ApplicationWindow {
             } else if (task === 1) {
                 title.text = "Data Acquisition Mode"
                 frameId.state = "acquisition_mode"
+
+                masterController.ui_chartViewController.resetChart()
             } else if (task === 2) {
                 title.text = "Activity Prediction Mode"
                 frameId.state = "activity_mode"
             }
         }
-
-        //        function onActivityPredictionChanged(prediction) {
-        //            predictionItem.prediction = prediction
-        //        }
     }
 
     Frame {
@@ -69,8 +68,26 @@ ApplicationWindow {
             verticalAlignment:  Text.AlignVCenter
         }
 
-        Column {
-            id: devicesAvailable
+
+
+        PredictionItem {
+            id: predictionItem
+
+            anchors {
+                top: title.bottom
+                left: parent.left
+                right: parent.right
+                bottom: connectButton.top
+                margins: 10
+            }
+
+            prediction: masterController.ui_activityObserver.activityPrediction
+            opacity: 0
+
+        }
+
+        ScopeView {
+            id: chartView
             anchors {
                 top: title.bottom
                 left: parent.left
@@ -78,42 +95,103 @@ ApplicationWindow {
                 margins: 10
             }
 
-            width: labelId.implicitWidth
+            width: parent.width / 4 * 3
 
-            Label {
-                id: labelId
-                text: "Choose a device:"
-            }
-
-            RadioButton {
-                id: radioDavide
-                checked: true
-                text: qsTr("Davide")
-            }
-
-            RadioButton {
-                id: radioMatteo
-                text: qsTr("Matteo")
-            }
-
-            RadioButton {
-                id: radioMartina
-                text: qsTr("Martina")
-            }
+            opacity: 0
         }
 
-
-        Label {
-            id: secondsRecordedId
+        ListView {
+            id: channelsList
             anchors {
+                top: chartView.top
+                left: chartView.right
                 right: parent.right
-                top: title.bottom
+                bottom: chartView.bottom
                 margins: 10
             }
+
+            spacing: 5
+            clip: true
+
+            header: Label {
+                id: secondsRecordedId
+                width: parent.width
+                wrapMode: Text.Wrap
+
+
+                text: qsTr("Recorded:") + " " + masterController.ui_fileManager.seconds + "s"
+                font.pointSize: 11
+
+            }
+
+            model: masterController.ui_chartViewController.channels
+            delegate: Pane {
+                id: control
+                width: parent.width
+                height: 50
+
+                property int radius: 3
+
+
+                background: Rectangle {
+                    color: (channelVisible === true) ? channelColor : "#9F9F9F"
+                    radius: control.radius
+
+                    layer.enabled: control.enabled && control.Material.elevation > 0
+                    layer.effect: ElevationEffect {
+                        elevation: control.Material.elevation
+                    }
+
+                    Behavior on color {
+                        ColorAnimation { duration: 500 }
+                    }
+                }
+
+                Row {
+                    anchors.fill: parent
+                    spacing: 10
+                    Rectangle {
+
+                        width: 20
+                        height: 20
+
+                        radius: channelVisible ? 20 : 5
+
+                        color: channelVisible ? channelColor : "white"
+                        border.color: "black"
+                        border.width: 3
+
+                        Behavior on color {
+                            ColorAnimation { duration: 500 }
+                        }
+
+                        Behavior on radius {
+                            NumberAnimation { duration: 500 }
+                        }
+
+                    }
+
+                    Label {
+                        text: channelName
+                    }
+
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+
+                    onClicked: {
+                        channelVisible = !channelVisible
+                        console.log("visible = " + channelVisible)
+                    }
+                }
+
+
+
+
+            }
+
             opacity: 0
-
-            text: qsTr("Seconds recorded:") + " " + masterController.ui_fileManager.seconds
-
         }
 
         ListView {
@@ -183,24 +261,42 @@ ApplicationWindow {
                     }
                 }
             }
-
         }
 
-        PredictionItem {
-            id: predictionItem
-
+        Column {
+            id: devicesAvailable
             anchors {
                 top: title.bottom
                 left: parent.left
-                right: parent.right
                 bottom: connectButton.top
                 margins: 10
             }
 
-            prediction: masterController.ui_activityObserver.activityPrediction
-            opacity: 0
+            width: labelId.implicitWidth
 
+            Label {
+                id: labelId
+                text: "Choose a device:"
+            }
+
+            RadioButton {
+                id: radioDavide
+                checked: true
+                text: qsTr("Davide")
+            }
+
+            RadioButton {
+                id: radioMatteo
+                text: qsTr("Matteo")
+            }
+
+            RadioButton {
+                id: radioMartina
+                text: qsTr("Martina")
+            }
         }
+
+
 
 
         Button {
@@ -290,11 +386,15 @@ ApplicationWindow {
                     opacity: 0
                 }
                 PropertyChanges {
-                    target: secondsRecordedId
+                    target: predictionItem
                     opacity: 0
                 }
                 PropertyChanges {
-                    target: predictionItem
+                    target: chartView
+                    opacity: 0
+                }
+                PropertyChanges {
+                    target: channelsList
                     opacity: 0
                 }
             },
@@ -313,7 +413,11 @@ ApplicationWindow {
                     opacity: 1
                 }
                 PropertyChanges {
-                    target: secondsRecordedId
+                    target: chartView
+                    opacity: 1
+                }
+                PropertyChanges {
+                    target: channelsList
                     opacity: 1
                 }
             },
@@ -352,14 +456,14 @@ ApplicationWindow {
                 }
 
                 NumberAnimation {
-                    target: secondsRecordedId
+                    target: devicesAvailable
                     property: "opacity"
                     duration: 500
                     easing.type: Easing.Linear
                 }
 
                 NumberAnimation {
-                    target: devicesAvailable
+                    target: chartView
                     property: "opacity"
                     duration: 500
                     easing.type: Easing.Linear

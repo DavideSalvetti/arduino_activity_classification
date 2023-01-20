@@ -6,7 +6,9 @@ android: QT += androidextras
 
 SOURCES += \
         activityobserver.cpp \
+        channel.cpp \
         chartviewcontroller.cpp \
+        dataparser.cpp \
         devicecontroller.cpp \
         filemanager.cpp \
         main.cpp \
@@ -29,7 +31,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     activityobserver.h \
+    channel.h \
     chartviewcontroller.h \
+    dataparser.h \
     devicecontroller.h \
     filemanager.h \
     mastercontroller.h

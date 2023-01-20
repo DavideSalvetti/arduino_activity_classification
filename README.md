@@ -14,3 +14,4 @@ Inside this project, icons from <a href="https://www.flaticon.com/">Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/cycling" title="cycling icons">Cycling icons created by Freepik - Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/man" title="man icons">Man icons created by Freepik - Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/question-mark" title="question mark icons">Question mark icons created by Freepik - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/activity" title="activity icons">Activity icons created by Freepik - Flaticon</a>

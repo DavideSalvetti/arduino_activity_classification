@@ -1,0 +1,103 @@
+\documentclass{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{import}
+\usepackage{todonotes}
+\usepackage{color}
+\usepackage{rotating}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{pdfpages}
+\usepackage{siunitx}
+\usepackage[italiano]{algorithm2e}
+\usepackage[american, siunitx]{circuitikz}
+\usepackage{pdflscape}
+\usepackage{subfig}
+\usetikzlibrary{fit}
+\usepackage[euler]{textgreek}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+\usepackage[signatures,swapnames,sans]{frontespizio}
+
+\usepackage{geometry}
+\geometry{portrait, margin=3cm}
+\usepackage{siunitx}
+\sisetup{
+	per-mode=fraction,
+	fraction-function=\tfrac
+}
+
+\newcommand{\sub}[1]{\textsubscript{#1}}
+\newcommand{\super}[1]{\textsuperscript{#1}}
+
+\newcommand{\Fig}[0]{Fig.}
+
+\usepackage{titlesec}
+\usepackage{listings}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\ttfamily\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\titleformat{\chapter}{\normalfont\huge}{}{20pt}{\huge\bfseries}
+
+\begin{document}
+	\begin{frontespizio}
+		\Margini{3cm}{3cm}{3cm}{3cm}
+		\Universita{Bergamo}
+		\Logo[43.332mm]{unibg-mark}
+		\Divisione{Scuola di Ingegneria}
+		\Corso[Laurea Magistrale]{Ingegneria Informatica}
+		\Titolo{Progetto di Sensori}
+		\Sottotitolo{Classificazione di attività con la piattaforma Arduino Nano 33 BLE Sense}
+		\Punteggiatura{}
+		\NRelatore{Prof.}{}
+		\Relatore{Gianluca Traversi}
+		\Candidato[1057596]{Davide Salvetti}
+		\Candidato[1059640]{Martina Fanton}
+		\Candidato[1057926]{Matteo Verzeroli}
+		\Annoaccademico{2022--2023}
+		\begin{Preambolo*}
+			\usepackage[italian]{babel}
+			\usepackage[T1]{fontenc}
+			\usepackage[utf8]{inputenc}
+			\usepackage{microtype}
+			\usepackage{lmodern}
+			\graphicspath{{img/}}
+			
+			\renewcommand{\frontinstitutionfont}{\fontsize{14}{17}\bfseries\scshape}
+			\renewcommand{\fronttitlefont}{\fontsize{17}{21}\bfseries\scshape}
+			\renewcommand{\frontfootfont}{\fontsize{12}{14}\bfseries\scshape}
+		\end{Preambolo*}
+	\end{frontespizio}	
+	
+	\import{./TextFiles}{doc.tex}
+\end{document}

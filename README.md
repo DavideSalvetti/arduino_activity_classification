@@ -1,5 +1,5 @@
-# arduino_activity_tracker
-Arduino Activity Tracker Using Arduino Nano 33 BLE Sense
+# Arduino Activity Classification
+Arduino Activity Classification Using Arduino Nano 33 BLE Sense
 
 
 <h2>Icon used inside this project</h2>

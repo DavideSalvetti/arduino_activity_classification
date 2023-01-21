@@ -1,5 +1,8 @@
 # Arduino Activity Classification
-Arduino Activity Classification Using Arduino Nano 33 BLE Sense
+Arduino Activity Classification Using Arduino Nano 33 BLE Sense.
+
+<h1> Project Description </h1>
+The aim of this project is to classify the following physical activities: standing, walking, jumping and cycling. All the data come from an Arduino Nano 33 BLE Sense, a powerful Arduino board that has a lot of sensors on board, like an IMU, temperature and humidity sensors. The Arduno Nano 33 BLE Sense is placed above the ankle of the left leg: it collects data and, through an on board NN, classifies them. The Arduno uses BLE to communicate with a mobile phone app, developed with Qt 5.15.
 
 
 <h2>Icon used inside this project</h2>

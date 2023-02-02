@@ -1,11 +1,30 @@
 \section{Introduzione}
-\todo{Obbiettivo e cosa è stato utlizzato}
+\todo{Obbiettivo e cosa è stato utilizzato}
+Lo scopo di questo progetto consiste nella classificazione dell'attività fisica svolta da un individuo effettuando delle misure con una board Arduino Nano 33 BLE Sense posizionata poco sopra la caviglia del soggetto. Per svolgere questa classificazione e in particolare per rilevare le misure sono stati utilizzati i seguenti sensori presenti sulla board:
+\begin{itemize}
+	\item accelerometro, che ha consentito di ricavare l'accelerazione sui tre assi (x, y e z);
+	\item giroscopio, che ha consentito di ricavare la velocità di rotazione sui tre assi (x, y e z);
+	\item sensore di temperatura e di umidità, che ha consentito di ricavare la temperatura (in gradi Celsius) e l'umidità.
+\end{itemize}
+La metodologia utilizzata per classificare le attività prevede l'utilizzo di una \textit{black box}, che analizza le misure ricevute in ingresso e restituisce la loro classificazione. Questo è stato realizzato mediante una piattaforma di Machine Learning, denominata Edge Impulse. Le possibili tipologie di attività fisica che possono essere individuate sono: cyclette, fermo, salto della corda e camminata. Analogamente, questa tecnica può essere seguita anche per classificare ulteriori attività fisiche (ad esempio la corsa).
 
 \section{Acquisizione dei dati}
 \todo{Per prima cosa è stato necessario acquisire i dati dai sensori. Come lo abbiamo fatto. Problemi incontrati.}
+Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di eseguire le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui è stato utilizzato Arduino come \textit{Peripherical}, che trasmette i dati sotto forma di caratteristiche, e l'applicazione come \textit{Central}, che li riceve. \todo{dubbio: o forse i due ruoli sono invertiti?!?}
+
+I dati acquisiti con il BLE, come preannunciato nella sezione precedente, sono: le accelerazioni e le velocità di rotazione entrambe sui tre assi, la temperatura e l'umidità.
+Siccome dalle prime acquisizioni delle misure è stato notato sia che il delay tra coppie di misure successive non corrispondeva sempre all'incirca a \SI{15}{\milli\seconds} a causa del collegamento BLE che provoca perdite di tempo sia che durante l'invio delle misure tramite BLE venivano persi dei campioni, all'interno del firmware è stato creato un buffer circolare per poter bufferizzare le acquisizioni da trasmettere nel Bluetooth. In questo modo si è visto che il delay tra coppie di misure assume sempre valori prossimi ai \SI{15}{\milli\seconds} desiderati e soprattutto che non vengono perse delle acquisizioni perchè vengono mantenute nel buffer.
+\todo{mutex e millis?}
 
 \section{Edge Impulse}
 \todo{I dati acquisisti sono stati caricati su Edge Impulse. Come è stato creato l'impulse. Su cosa lavora. Cosa produce edge impulse. Come son state modificate le finestre. Feature spettrali. Bontà del modello e testing.}
 
 \section{Classificazione delle attività}
 \todo{È stato sviluppato un nuovo firmware in cui si fa questo questo e questo. Si utilizzano le librerie fornite da Edge Impulse. In un thread si acquisiscono i dati e si riempie un buffer, dopo tot secondi si estraggono le feature tramite DSP poi si fa inferenza. Quali sono i tempi che impiega il firmware. Pubblichiamo un valore su una caratteristica del BLE. L'app riceve questo valore e mostra l'attività classificata. Per passare da una attività all'altra servono circa tot secondi perchè si deve svuotare il buffer. }
+\begin{itemize}
+	\item cyclette (il rispettivo stato è definito come "\textit{cyclette}");
+	\item fermo in piedi (il rispettivo stato è definito come "\textit{idle}");
+	\item salto della corda (il rispettivo stato è definito come "\textit{jump}");
+	\item camminata (il rispettivo stato è definito come "\textit{walking}");
+	\item non noto (il rispettivo stato è definito come "\textit{unknown}").
+\end{itemize}

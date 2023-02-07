@@ -4,19 +4,14 @@
 #include "Nano33BLEGyroscope.h"
 #include "Nano33BLETemperature.h"
 #include "string.h"
-#include "NRF52_MBED_TimerInterrupt.h"
-#include "NRF52_MBED_ISR_Timer.h"
 
 #define CIRCULAR_BUFFER_INT_SAFE
-#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-//#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-CircularBuffer<Nano33BLEAccelerometerData, 3000> accBuffer;
-CircularBuffer<Nano33BLEGyroscopeData, 3000> gyroBuffer;
-CircularBuffer<Nano33BLETemperatureData, 3000> tempBuffer;
-CircularBuffer<unsigned long, 3000> timeBuffer;
-
-#define HW_TIMER_INTERVAL_MS          1
-#define TIMER_INTERVAL              15L
+//#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+CircularBuffer<Nano33BLEAccelerometerData, 300> accBuffer;
+CircularBuffer<Nano33BLEGyroscopeData, 300> gyroBuffer;
+CircularBuffer<Nano33BLETemperatureData, 300> tempBuffer;
+CircularBuffer<unsigned long, 300> timeBuffer;
 
 Nano33BLEAccelerometerData accelerometerData;
 Nano33BLEGyroscopeData gyroscopeData;
@@ -24,7 +19,7 @@ Nano33BLETemperatureData temperatureData;
 
 BLEService accGyroTempHumiService("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
 BLEStringCharacteristic sensorCharacteristic("3000", BLERead | BLENotify, 150);
-BLEDevice central;
+bool connected = false;
 
 char token[150] = "";
 char accstr[50] = "";
@@ -32,19 +27,23 @@ char gyrostr[50] = "";
 char tempstr[10] = "";
 char timestr[40] = "";
 
-NRF52_MBED_Timer ITimer(NRF_TIMER_3);
-NRF52_MBED_ISRTimer ISR_Timer;
+rtos::Mutex buffer_mutex;
+rtos::Mutex token_mutex;
+osThreadId_t main_thread_id;
+bool first_update = true;
 
-bool mutex= false;
 unsigned long currentMillis = 0;
 
-void TimerHandler()
-{
-  ISR_Timer.run();
-}
+static rtos::Thread Data_thread(osPriorityRealtime);
+static rtos::Thread BLE_thread(osPriorityNormal);
+static rtos::Thread BLE_poll_thread(osPriorityNormal);
+
+void updateSensors();
+void writeBLECharacteristic();
+void BLEPool();
 
 void setup() {
-  //Serial.begin(115200);
+  Serial.begin(115200);
   Accelerometer.begin();
   Gyroscope.begin();
   Temperature.begin();
@@ -59,25 +58,68 @@ void setup() {
   BLE.addService(accGyroTempHumiService);
   BLE.advertise();
 
-  ITimer.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, TimerHandler);
-  ISR_Timer.setInterval(TIMER_INTERVAL,  updateSensors);
+  BLE.setEventHandler( BLEConnected, blePeripheralConnectHandler );
+  BLE.setEventHandler( BLEDisconnected, blePeripheralDisconnectHandler );
 
   pinMode(LED_BUILTIN, OUTPUT);
+
+  delay(5000);
 }
 
 void loop() {
-  central = BLE.central();
+  main_thread_id = osThreadGetId();
 
-  if(!mutex && !timeBuffer.isEmpty()){
-    mutex = true;
-    if(!accBuffer.isEmpty())
-      accelerometerData = accBuffer.pop();
-    if(!gyroBuffer.isEmpty())
-      gyroscopeData = gyroBuffer.pop();
-    if(!tempBuffer.isEmpty())
-      temperatureData = tempBuffer.pop();
-    currentMillis = timeBuffer.pop();
-    mutex = false;
+  Data_thread.start(mbed::callback(&updateSensors));
+  BLE_poll_thread.start(mbed::callback(&BLEPool));
+  BLE_thread.start(mbed::callback(&writeBLECharacteristic));
+
+  rtos::Thread::signal_wait(0x1);
+
+  while(1){
+    if(!timeBuffer.isEmpty()){
+      if(token_mutex.trylock()){
+        if(buffer_mutex.trylock()){
+          if(!accBuffer.isEmpty())
+            accelerometerData = accBuffer.pop();
+          if(!gyroBuffer.isEmpty())
+            gyroscopeData = gyroBuffer.pop();
+          if(!tempBuffer.isEmpty())
+            temperatureData = tempBuffer.pop();
+          currentMillis = timeBuffer.pop();
+          
+          osSignalSet(BLE_thread.get_id(), 0x2);
+
+          buffer_mutex.unlock();
+        }
+        token_mutex.unlock();
+      }
+    }
+    analogWrite(LED_BUILTIN, map(accBuffer.size(),0,300,0,255));
+  }
+}
+
+void BLEPool(){
+  while(1){
+    BLE.poll(10);
+  }
+}
+
+void blePeripheralConnectHandler( BLEDevice central )
+{
+  delay(1000);
+  connected = true;
+}
+
+
+void blePeripheralDisconnectHandler( BLEDevice central )
+{
+  connected = false;
+}
+
+void writeBLECharacteristic(){
+    while(1){
+    rtos::Thread::signal_wait(0x2);
+    token_mutex.lock();
 
     sprintf(token,"");
 
@@ -91,44 +133,48 @@ void loop() {
     strcat(token, gyrostr);
     strcat(token, tempstr);
     strcat(token, timestr);
-
-    if(central)
+    
+    if (connected){
       sensorCharacteristic.writeValue(token);
-  }
-  /*
-  Serial.println(accBuffer.size());
-  Serial.println(gyroBuffer.size());
-  Serial.println(tempBuffer.size());
-  Serial.println(timeBuffer.size());
-  Serial.println("-------------");
-  */
+    }
 
-  analogWrite(LED_BUILTIN, map(accBuffer.size(),0,3000,0,255));
+    token_mutex.unlock();
+  }
 }
 
 void updateSensors() {
-  if(!mutex){
-    mutex = true;
-    Nano33BLEAccelerometerData accelerometerData1;
-    Nano33BLEGyroscopeData gyroscopeData1;
-    Nano33BLETemperatureData temperatureData1;
+  while(true){
+    if(buffer_mutex.trylock()){
+      Serial.println(millis());
+      if(first_update){
+        osSignalSet(main_thread_id, 0x1);
+        first_update = false;
+      }
 
-    if(Accelerometer.pop(accelerometerData1))
-      accBuffer.unshift(accelerometerData1);
-    else
-      accBuffer.unshift(accelerometerData);
+      Nano33BLEAccelerometerData accelerometerData1;
+      Nano33BLEGyroscopeData gyroscopeData1;
+      Nano33BLETemperatureData temperatureData1;
 
-    if(Gyroscope.pop(gyroscopeData1))
-      gyroBuffer.unshift(gyroscopeData1);
-    else
-      gyroBuffer.unshift(gyroscopeData);
+      if(Accelerometer.pop(accelerometerData1))
+        accBuffer.unshift(accelerometerData1);
+      else
+        accBuffer.unshift(accelerometerData);
 
-    if(Temperature.pop(temperatureData1))
-      tempBuffer.unshift(temperatureData1);
-    else
-      tempBuffer.unshift(temperatureData);
+      if(Gyroscope.pop(gyroscopeData1))
+        gyroBuffer.unshift(gyroscopeData1);
+      else
+        gyroBuffer.unshift(gyroscopeData);
 
-    timeBuffer.unshift(millis());
-    mutex = false;
+      if(Temperature.pop(temperatureData1))
+        tempBuffer.unshift(temperatureData1);
+      else
+        tempBuffer.unshift(temperatureData);
+
+      timeBuffer.unshift(millis());
+
+      buffer_mutex.unlock();
+    }
+
+    rtos::Thread::wait(15);
   }
 }

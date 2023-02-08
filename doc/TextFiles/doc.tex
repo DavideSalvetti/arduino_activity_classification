@@ -1,5 +1,10 @@
 \section{Introduzione}
-Lo scopo di questo progetto consiste nella classificazione dell'attività fisica svolta da un individuo effettuando delle misure con una board Arduino Nano 33 BLE Sense posizionata tra la caviglia e il ginocchio del soggetto. L'acquisizione dei dati da parte di Arduino inizia soltanto dopo aver connesso la board a un'applicazione, che può essere scaricata su un qualsiasi dispositivo e che permette in seguito di visualizzare la previsione della classificazione. Per svolgere questa classificazione e in particolare per rilevare le misure sono stati utilizzati i seguenti sensori presenti sulla board:
+Lo scopo di questo progetto consiste nella classificazione dell'attività fisica svolta da un individuo grazie a delle misure ottenute con una board Arduino Nano 33 BLE Sense posizionata sulla caviglia del soggetto. 
+
+
+
+
+L'acquisizione dei dati da parte di Arduino inizia soltanto dopo aver connesso la board a un'applicazione, che può essere scaricata su un qualsiasi dispositivo e che permette in seguito di visualizzare la previsione della classificazione. Per svolgere questa classificazione e in particolare per rilevare le misure sono stati utilizzati i seguenti sensori presenti sulla board:
 \begin{itemize}
 	\item accelerometro, che ha consentito di ricavare l'accelerazione sui tre assi (x, y e z);
 	\item giroscopio, che ha consentito di ricavare la velocità di rotazione sui tre assi (x, y e z);
@@ -16,8 +21,7 @@ Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmwa
 
 I dati acquisiti con il BLE, come preannunciato nella sezione precedente, sono: le accelerazioni e le velocità di rotazione entrambe sui tre assi, la temperatura e l'umidità. \todo{impostare come sezione precedente}
 
-Nelle prime acquisizioni delle misure sono stati riscontrati due problemi: il primo riguarda il fatto che il delay tra coppie di misure successive non corrisponde sempre all'incirca a %\SI{15}{\milli\seconds}
-(come desiderato) a causa del collegamento BLE, che provoca perdite di tempo; mentre il secondo è relativo alle perdite di campioni  misurati durante l'invio delle misure tramite il BLE. Per questi due motivi all'interno del firmware è stato creato un buffer circolare in modo da poter bufferizzare le acquisizioni da trasmettere nel Bluetooth. In conseguenza a questa modifica si è visto che il delay tra coppie di misure assume sempre valori prossimi a %\SI{15}{\milli\seconds}
+Nelle prime acquisizioni delle misure sono stati riscontrati due problemi: il primo riguarda il fatto che il delay tra coppie di misure successive non corrisponde sempre all'incirca a \SI{15}{\milli\second} (come desiderato) a causa del collegamento BLE, che provoca perdite di tempo; mentre il secondo è relativo alle perdite di campioni  misurati durante l'invio delle misure tramite il BLE. Per questi due motivi all'interno del firmware è stato creato un buffer circolare in modo da poter bufferizzare le acquisizioni da trasmettere nel Bluetooth. In conseguenza a questa modifica si è visto che il delay tra coppie di misure assume sempre valori prossimi a %\SI{15}{\milli\seconds}
 e soprattutto che non vengono perse delle acquisizioni perchè vengono mantenute nel buffer.
 \todo{errore: non riconosce comando SI}
 

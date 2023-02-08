@@ -7,24 +7,25 @@
 //#include <C:\Users\Martina\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 #include <ArduinoBLE.h>
 
+/*setting parameter for inference module*/
 static bool debug_nn = false;
-static uint16_t run_inference_every_ms = 5000;
-uint16_t buffer_step = 0;
+static uint16_t run_inference_every_ms = 1000;
 unsigned long time_passed;
-osThreadId_t main_thread_id;
-
-uint8_t prediction_int;
-bool send_BLE = false;
+uint8_t prediction_int; //result of prediction
 
 static float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
 CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> circular_buffer;
 
 BLEService prediction_service("e2e65ffc-5687-4cbe-8f2d-db76265f269a");
 BLEUnsignedCharCharacteristic prediction_characteristic("3000", BLERead | BLENotify);
-BLEDevice central;
+
+bool connected = false; //a central is connected
+bool send_BLE = false; //true if data available to be sent
+bool buffer_full = false; //buffer become full for first time
 
 static rtos::Thread dataread_thread(osPriorityRealtime);
 static rtos::Thread BLE_thread(osPriorityBelowNormal);
+osThreadId_t main_thread_id; //id of loop main
 
 void run_inference_background();
 void get_IMU_data();
@@ -32,9 +33,8 @@ void update_BLE();
 
 void setup() {
   Serial.begin(115200);
-
+  
   delay(5000);
-
   if (!IMU.begin()) {
     ei_printf("Failed to initialize IMU!\r\n");
   } else {
@@ -44,23 +44,29 @@ void setup() {
     ei_printf("ERR: EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME should be equal to 5 (3 acc + 2 gyro)\n");
     return;
   }
-  dataread_thread.start(mbed::callback(&get_IMU_data));
-  BLE_thread.start(mbed::callback(&update_BLE));
 
   if(!BLE.begin()){
     while(true);
   }
 
+  /*BLE setup*/
   BLE.setLocalName("Activity Classificator");
   BLE.setAdvertisedService(prediction_service);
   prediction_service.addCharacteristic(prediction_characteristic);
   BLE.addService(prediction_service);
   BLE.advertise();
+  BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+
+  /*start threads*/
+  dataread_thread.start(mbed::callback(&get_IMU_data));
+  BLE_thread.start(mbed::callback(&update_BLE));
 }
 
 void loop() {
   main_thread_id = osThreadGetId();
-    // wait until we have a full buffer
+
+  // wait until we have a full buffer
   rtos::Thread::signal_wait(0x1);
 
   // This is a structure that smoothens the output result
@@ -69,6 +75,10 @@ void loop() {
   ei_classifier_smooth_init(&smooth, 10 /* no. of readings */, 7 /* min. readings the same */, 0.8 /* min. confidence */, 0.3 /* max anomaly */);
 
   while (1) {
+    if(circular_buffer.size() == 0){
+      break;
+    }
+
     for(unsigned short i = 0; i < circular_buffer.size(); i++){
       inference_buffer[i] = circular_buffer[i];
     }
@@ -96,9 +106,7 @@ void loop() {
               result.timing.dsp, result.timing.classification, result.timing.anomaly);
     ei_printf(": ");
 
-
     const char* prediction = ei_classifier_smooth_update(&smooth, &result, prediction_int);
-
     send_BLE = true;
 
     ei_printf("%s ", prediction);
@@ -117,56 +125,76 @@ void loop() {
    
     rtos::Thread::wait(run_inference_every_ms);
   }
-
   ei_classifier_smooth_free(&smooth);
 }
 
 void get_IMU_data() {
   float acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z;
-  while (1) {
-    time_passed = millis();
 
-    if (IMU.accelerationAvailable()) {
-      IMU.readAcceleration(acc_x,acc_y,acc_z);
-    } 
-    if (IMU.gyroscopeAvailable()) {
-       IMU.readGyroscope(gyro_x,gyro_y,gyro_z);
+  while (true) {
+    if(connected){
+      time_passed = millis();
+
+      if (IMU.accelerationAvailable()) {
+        IMU.readAcceleration(acc_x,acc_y,acc_z);
+      } 
+      if (IMU.gyroscopeAvailable()) {
+        IMU.readGyroscope(gyro_x,gyro_y,gyro_z);
+      }
+
+      circular_buffer.push(acc_x);
+      circular_buffer.push(acc_y);
+      circular_buffer.push(acc_z);
+      circular_buffer.push(gyro_y);
+      circular_buffer.push(gyro_z);
+
+      if (!buffer_full && circular_buffer.size() == EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE){
+        osSignalSet(main_thread_id, 0x1); //signal buffer is full
+        buffer_full = true;
+      }
+
+      time_passed = millis() - time_passed;
+
+      if(time_passed <0) //handle ulong overflow situation
+        time_passed = 0 - time_passed;
+
+      if(time_passed > EI_CLASSIFIER_INTERVAL_MS) //handle error situation
+        time_passed = EI_CLASSIFIER_INTERVAL_MS;
+
+      rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS - time_passed);
     }
-
-    circular_buffer.push(acc_x);
-    circular_buffer.push(acc_y);
-    circular_buffer.push(acc_z);
-    circular_buffer.push(gyro_y);
-    circular_buffer.push(gyro_z);
-
-    if (buffer_step < EI_CLASSIFIER_RAW_SAMPLE_COUNT - 1) {
-      buffer_step++;
-    } else if (buffer_step != 2000) {
-      buffer_step++;
-      osSignalSet(main_thread_id, 0x1);
+    else{
+      rtos::Thread::wait(10);
     }
-
-    time_passed = millis() - time_passed;
-
-    if(time_passed <0) //handle overflow situation
-      time_passed = 0 - time_passed;
-
-    if(time_passed > EI_CLASSIFIER_INTERVAL_MS)
-      time_passed = EI_CLASSIFIER_INTERVAL_MS;
-
-    rtos::Thread::wait(EI_CLASSIFIER_INTERVAL_MS - time_passed);
   }
 }
 
 void update_BLE(){
   while(1){
-    central = BLE.central();
-    if(BLE.connected() && send_BLE){
+    BLE.poll(); //poll for Bluetooth® Low Energy radio events and handle them.
+
+    if(connected && send_BLE){
       prediction_characteristic.writeValue(prediction_int);
       send_BLE = false;
     }
     rtos::Thread::wait(10);
   }
+}
+
+void blePeripheralConnectHandler( BLEDevice central )
+{
+  //central is connected
+  connected = true;
+  prediction_characteristic.writeValue(5); //inizialize service
+}
+
+
+void blePeripheralDisconnectHandler( BLEDevice central )
+{
+  //central is disconnected
+  connected = false;
+  buffer_full = false;
+  circular_buffer.clear();
 }
 
 #if !defined(EI_CLASSIFIER_SENSOR) || EI_CLASSIFIER_SENSOR != EI_CLASSIFIER_SENSOR_FUSION

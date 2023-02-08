@@ -2,8 +2,8 @@
 %exampledata_filtr = movmean(exampledata_filtr,10,2);
 
 
-exampledata_filtr = lowpass(exampledata,1,1000/15);
-%exampledata_filtr = highpass(exampledata_filtr,0.5,1000/15);
+exampledata_filtr = lowpass(exampledata,10,1000/15);
+exampledata_filtr = highpass(exampledata_filtr,0.5,1000/15);
 exampledata_filtr(:,9) = exampledata(:,9) - exampledata(1,9);
 
 figure 

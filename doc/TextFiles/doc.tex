@@ -4,28 +4,27 @@ Lo scopo di questo progetto consiste nella classificazione dell'attività fisica
 
 
 
-L'acquisizione dei dati da parte di Arduino inizia soltanto dopo aver connesso la board a un'applicazione, che può essere scaricata su un qualsiasi dispositivo e che permette in seguito di visualizzare la previsione della classificazione. Per svolgere questa classificazione e in particolare per rilevare le misure sono stati utilizzati i seguenti sensori presenti sulla board:
+L'acquisizione dei dati da parte di Arduino inizia soltanto dopo aver connesso la board a un'applicazione, che può essere scaricata su un qualsiasi dispositivo e che permette in seguito di visualizzare la previsione della classificazione. Per rilevare le misure sono stati utilizzati i seguenti sensori presenti sulla board:
 \begin{itemize}
 	\item accelerometro, che ha consentito di ricavare l'accelerazione sui tre assi (x, y e z);
 	\item giroscopio, che ha consentito di ricavare la velocità di rotazione sui tre assi (x, y e z);
 	\item sensore di temperatura e di umidità, che ha consentito di ricavare la temperatura (in gradi Celsius) e l'umidità.
-	\todo{questa riga va tolta oppure meglio spiegare perchè non è stata inserita nella classificazione?}
 \end{itemize}
+Di tutti questi dati, però, nella classificazione non sono stati considerati la temperatura e l'umidità perchè si sono rivelati non significativi per il tipo di classificazione eseguita.
+
 
 La metodologia utilizzata per classificare le attività prevede l'utilizzo di una \textit{black box}, che analizza le misure ricevute in ingresso e restituisce come output una loro classificazione. Questo è stato realizzato mediante una piattaforma di Machine Learning, denominata Edge Impulse, che fornisce delle librerie di classificazione. Le possibili tipologie di attività fisica che possono essere individuate sono: cyclette, fermo, salto della corda e camminata. Analogamente, questa tecnica può essere seguita anche per classificare ulteriori attività fisiche (ad esempio la corsa).
 
 Infine i risultati della classificazione vengono mostrati in tempo reale all'individuo sempre attraverso l'applicazione.
 
 \section{Acquisizione dei dati}
-Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di eseguire le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui è stato utilizzato Arduino come \textit{Peripherical}, che trasmette i dati sotto forma di caratteristiche, e l'applicazione come \textit{Central}, che li riceve. \todo{dubbio: i due ruoli vanno invertiti?}
+Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di eseguire le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui è stato utilizzato Arduino come \textit{Peripheral}, che trasmette i dati sotto forma di caratteristiche, e l'applicazione come \textit{Central}, che li riceve.
 
-I dati acquisiti con il BLE, come preannunciato nella sezione precedente, sono: le accelerazioni e le velocità di rotazione entrambe sui tre assi, la temperatura e l'umidità. \todo{impostare come sezione precedente}
+I dati acquisiti con il BLE, come preannunciato nella sezione precedente, sono: le accelerazioni e le velocità di rotazione entrambe sui tre assi, la temperatura e l'umidità.
 
-Nelle prime acquisizioni delle misure sono stati riscontrati due problemi: il primo riguarda il fatto che il delay tra coppie di misure successive non corrisponde sempre all'incirca a \SI{15}{\milli\second} (come desiderato) a causa del collegamento BLE, che provoca perdite di tempo; mentre il secondo è relativo alle perdite di campioni  misurati durante l'invio delle misure tramite il BLE. Per questi due motivi all'interno del firmware è stato creato un buffer circolare in modo da poter bufferizzare le acquisizioni da trasmettere nel Bluetooth. In conseguenza a questa modifica si è visto che il delay tra coppie di misure assume sempre valori prossimi a %\SI{15}{\milli\seconds}
-e soprattutto che non vengono perse delle acquisizioni perchè vengono mantenute nel buffer.
-\todo{errore: non riconosce comando SI}
+Nelle prime acquisizioni delle misure sono stati riscontrati due problemi: il primo riguarda il fatto che il delay tra coppie di misure successive non corrisponde sempre all'incirca a \SI{15}{\milli\second} (come desiderato) a causa del collegamento BLE, che provoca perdite di tempo; mentre il secondo è relativo alle perdite di campioni  misurati durante l'invio delle misure tramite il BLE. Per questi due motivi all'interno del firmware è stato creato un buffer circolare in modo da poter bufferizzare le acquisizioni da trasmettere nel Bluetooth. In conseguenza a questa modifica si è visto che il delay tra coppie di misure assume sempre valori prossimi a \SI{15}{\milli\second} e soprattutto che non vengono perse delle acquisizioni perchè vengono mantenute nel buffer.
 
-\todo{inserire anche mutex?}
+\todo{inserire anche mutex? + nuove modifiche}
 
 \todo{mancano dei problemi?}
 
@@ -37,14 +36,14 @@ Per realizzare la classificazione e poi visualizzarla sull'applicazione è stato
 
 \begin{figure}[tbh]
 	\centering
-	%\includegraphics[width=0.4\linewidth]{./ImageFiles/cyclette}
+	\includegraphics[width=0.4\linewidth]{./ImageFiles/cyclette}
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/idle}
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/jumping}
 	%\includegraphics[width=0.4\linewidth]{./ImageFiles/walking}
 	\caption{Schermate per le possibili attività: cyclette, fermo, salto della corda e camminata.}
 	\label{fig:attivitafisica}
 \end{figure}
-\todo{mancano schermate cyclette e walking}
+\todo{manca schermata walking}
 
 Invece nei momenti in cui non si riesce a classificare l'attività in corso in nessuna di quelle possibili si visualizza la schermata della figura \ref{fig:attesa}.
 

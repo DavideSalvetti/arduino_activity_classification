@@ -1,3 +1,6 @@
+#define CIRCULAR_BUFFER_INT_SAFE 
+#define BUFFER_SIZE 3000 //max size of the circular buffer
+
 #include "Arduino.h"
 #include "ArduinoBLE.h"
 #include "Nano33BLEAccelerometer.h"
@@ -6,25 +9,24 @@
 #include "string.h"
 #include "NRF52_MBED_TimerInterrupt.h"
 #include "NRF52_MBED_ISR_Timer.h"
+//#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 
-#define CIRCULAR_BUFFER_INT_SAFE
-#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-//#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-CircularBuffer<Nano33BLEAccelerometerData, 3000> accBuffer;
-CircularBuffer<Nano33BLEGyroscopeData, 3000> gyroBuffer;
-CircularBuffer<Nano33BLETemperatureData, 3000> tempBuffer;
-CircularBuffer<unsigned long, 3000> timeBuffer;
+CircularBuffer<Nano33BLEAccelerometerData, BUFFER_SIZE> accBuffer; //buffer for accelerometer data
+CircularBuffer<Nano33BLEGyroscopeData, BUFFER_SIZE> gyroBuffer; //buffer for gyroscope data
+CircularBuffer<Nano33BLETemperatureData, BUFFER_SIZE> tempBuffer; //buffer for temperature and humidity data
+CircularBuffer<unsigned long, BUFFER_SIZE> timeBuffer; //buffer for timestamp data
 
 #define HW_TIMER_INTERVAL_MS          1
-#define TIMER_INTERVAL              15L
+#define TIMER_INTERVAL              15L //data acquisition rate
 
 Nano33BLEAccelerometerData accelerometerData;
 Nano33BLEGyroscopeData gyroscopeData;
 Nano33BLETemperatureData temperatureData;
 
-BLEService accGyroTempHumiService("e2e65ffc-5687-4cbe-8f2d-db76265f269f");
-BLEStringCharacteristic sensorCharacteristic("3000", BLERead | BLENotify, 150);
-BLEDevice central;
+BLEService accGyroTempHumiService("e2e65ffc-5687-4cbe-8f2d-db76265f269f"); //BLE service
+BLEStringCharacteristic sensorCharacteristic("3000", BLERead | BLENotify, 150); //BLE characteristic
+bool connected = false; // central connected
 
 char token[150] = "";
 char accstr[50] = "";
@@ -38,13 +40,8 @@ NRF52_MBED_ISRTimer ISR_Timer;
 bool mutex= false;
 unsigned long currentMillis = 0;
 
-void TimerHandler()
-{
-  ISR_Timer.run();
-}
-
 void setup() {
-  //Serial.begin(115200);
+  Serial.begin(115200);
   Accelerometer.begin();
   Gyroscope.begin();
   Temperature.begin();
@@ -58,6 +55,8 @@ void setup() {
   accGyroTempHumiService.addCharacteristic(sensorCharacteristic);
   BLE.addService(accGyroTempHumiService);
   BLE.advertise();
+  BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
 
   ITimer.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, TimerHandler);
   ISR_Timer.setInterval(TIMER_INTERVAL,  updateSensors);
@@ -66,8 +65,8 @@ void setup() {
 }
 
 void loop() {
-  central = BLE.central();
-
+  BLE.poll(); //poll for Bluetooth® Low Energy radio events and handle them.
+  Serial.println(timeBuffer.size());
   if(!mutex && !timeBuffer.isEmpty()){
     mutex = true;
     if(!accBuffer.isEmpty())
@@ -92,43 +91,55 @@ void loop() {
     strcat(token, tempstr);
     strcat(token, timestr);
 
-    if(central)
-      sensorCharacteristic.writeValue(token);
+    if(connected)
+      sensorCharacteristic.writeValue(token); //send data to central connected
   }
-  /*
-  Serial.println(accBuffer.size());
-  Serial.println(gyroBuffer.size());
-  Serial.println(tempBuffer.size());
-  Serial.println(timeBuffer.size());
-  Serial.println("-------------");
-  */
-
-  analogWrite(LED_BUILTIN, map(accBuffer.size(),0,3000,0,255));
+  analogWrite(LED_BUILTIN, map(accBuffer.size(), 0, BUFFER_SIZE, 0, 255)); //visual feedback of the size of the buffer
 }
 
 void updateSensors() {
+  //acquire data from sensors every TIMER_INTERVAL
   if(!mutex){
     mutex = true;
-    Nano33BLEAccelerometerData accelerometerData1;
-    Nano33BLEGyroscopeData gyroscopeData1;
-    Nano33BLETemperatureData temperatureData1;
+    Nano33BLEAccelerometerData accelerometerData_temp;
+    Nano33BLEGyroscopeData gyroscopeData_temp;
+    Nano33BLETemperatureData temperatureData_temp;
 
-    if(Accelerometer.pop(accelerometerData1))
-      accBuffer.unshift(accelerometerData1);
+    if(Accelerometer.pop(accelerometerData_temp))
+      accBuffer.unshift(accelerometerData_temp);
     else
       accBuffer.unshift(accelerometerData);
 
-    if(Gyroscope.pop(gyroscopeData1))
-      gyroBuffer.unshift(gyroscopeData1);
+    if(Gyroscope.pop(gyroscopeData_temp))
+      gyroBuffer.unshift(gyroscopeData_temp);
     else
       gyroBuffer.unshift(gyroscopeData);
 
-    if(Temperature.pop(temperatureData1))
-      tempBuffer.unshift(temperatureData1);
+    if(Temperature.pop(temperatureData_temp))
+      tempBuffer.unshift(temperatureData_temp);
     else
       tempBuffer.unshift(temperatureData);
 
     timeBuffer.unshift(millis());
     mutex = false;
   }
+}
+
+void blePeripheralConnectHandler( BLEDevice central )
+{
+  //central is connected
+  connected = true;
+}
+
+
+void blePeripheralDisconnectHandler( BLEDevice central )
+{
+  //central is disconnected
+  connected = false;
+}
+
+void TimerHandler()
+{
+  //start ISR interrupts
+  ISR_Timer.run();
 }

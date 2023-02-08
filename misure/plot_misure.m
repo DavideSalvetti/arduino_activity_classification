@@ -1,176 +1,47 @@
-camminata_1 = camminata - mean(camminata,1); 
-camminata_1 = movmean(camminata_1,10);
+%exampledata_filtr = exampledata - mean(exampledata);
+%exampledata_filtr = movmean(exampledata_filtr,10,2);
+
+
+exampledata_filtr = lowpass(exampledata,1,1000/15);
+%exampledata_filtr = highpass(exampledata_filtr,0.5,1000/15);
+exampledata_filtr(:,9) = exampledata(:,9) - exampledata(1,9);
 
 figure 
 hold on
-%plot(Corsa1(:,9),Corsa1(:,1));
-plot(Corsa1(:,9),Corsa1(:,2));
-%plot(Corsa1(:,9),Corsa1(:,3));
+plot(exampledata_filtr(:,9),exampledata_filtr(:,1));
+plot(exampledata_filtr(:,9),exampledata_filtr(:,2));
+plot(exampledata_filtr(:,9),exampledata_filtr(:,3));
 hold off
+legend('accX', 'accY', 'accZ')
+xlim([5000 15000])
 
 figure 
 hold on
-plot(Corsa1(:,9),Corsa1(:,4));
-plot(Corsa1(:,9),Corsa1(:,5));
-plot(Corsa1(:,9),Corsa1(:,6));
+plot(exampledata_filtr(:,9),exampledata_filtr(:,4));
+plot(exampledata_filtr(:,9),exampledata_filtr(:,5));
+plot(exampledata_filtr(:,9),exampledata_filtr(:,6));
 hold off
+legend('gyroX', 'gyroY', 'gyroZ')
+xlim([5000 15000])
 
-%%
+figure 
+hold on
+plot(exampledata(:,9),exampledata(:,1));
+plot(exampledata(:,9),exampledata(:,2));
+plot(exampledata(:,9),exampledata(:,3));
+hold off
+legend('accX', 'accY', 'accZ')
+xlim([0 10000])
+
+figure 
+hold on
+plot(exampledata(:,9),exampledata(:,4));
+plot(exampledata(:,9),exampledata(:,5));
+plot(exampledata(:,9),exampledata(:,6));
+hold off
 
 figure
-d_1 = diff(Corsa1(:,9));
+d_1 = diff(exampledata(:,9));
 plot(d_1,'o');
 m_1=mean(d_1)
 s_1 = std(d_1)
-
-figure
-d_2 = diff(Corsa2(:,9));
-plot(d_2,'o');
-m_2=mean(d_2)
-s_2 = std(d_2)
-
-figure
-d_3 = diff(Camminatarotazionesx1(:,9));
-plot(d_3,'o');
-m_3=mean(d_3)
-s_3 = std(d_3)
-
-figure
-d_4 = diff(Camminatarotazionesx2(:,9));
-plot(d_4,'o');
-m_4=mean(d_4)
-s_4 = std(d_4)
-
-figure
-d_5 = diff(Camminatarotazionesx3(:,9));
-plot(d_5,'o');
-m_5=mean(d_3)
-s_5 = std(d_5)
-
-figure
-d_6 = diff(Camminatarotazionedx1(:,9));
-plot(d_6,'o');
-m_6=mean(d_6)
-s_6 = std(d_6)
-
-figure
-d_7 = diff(Camminatarotazionedx2(:,9));
-plot(d_7,'o');
-m_7=mean(d_7)
-s_7 = std(d_7)
-
-figure
-d_7 = diff(Camminatarotazionedx3(:,9));
-plot(d_7,'o');
-m_7=mean(d_7)
-s_7 = std(d_7)
-
-
-
-
-%% test 2m
-figure
-d_8 = diff(test1(:,9));
-plot(d_8,'o');
-m_8=mean(d_8)
-s_8 = std(d_8)
-
-figure
-d_9 = diff(test2(:,9));
-plot(d_9,'o');
-m_9=mean(d_9)
-s_9 = std(d_9)
-
-
-%% test 10cm
-
-figure
-d_10 = diff(test3(:,9));
-plot(d_10,'o');
-m_10=mean(d_10)
-s_10 = std(d_10)
-
-
-%% test 20ms
-
-figure
-d_11 = diff(test4(:,9));
-plot(d_11,'o');
-m_11=mean(d_11)
-s_11 = std(d_11)
-%% circular buffer
-
-figure
-d_100 = diff(test10(:,9));
-plot(d_100,'o');
-m_100=mean(d_100)
-s_100 = std(d_100)
-
-figure
-d_150 = diff(test15(:,9));
-plot(d_150,'o');
-m_150=mean(d_150)
-s_150 = std(d_150)
-
-figure
-d_test = diff(jump1(:,9));
-plot(d_test,'o');
-m_test=mean(d_test)
-s_test = std(d_test)
-
-test_1 = test - mean(test,1); 
-test_1 = movmean(test,100);
-
-figure 
-plot(Gyro(:,1))
-hold on
-plot(Gyro(:,2))
-plot(Gyro(:,3))
-xlim([0 5067])
-
-figure 
-plot(Gyro(:,4))
-hold on
-plot(Gyro(:,5))
-plot(Gyro(:,6))
-xlim([0 1000])
-
-legend(["gyro x", "gyro y", "gyro z"])
-
-
-figure
-plot(Untitled1(:,1))
-hold on
-plot(Untitled1(:,2))
-plot(Untitled1(:,3))
-xlim([0 1000])
-
-figure
-plot(Untitled1(:,4))
-hold on
-plot(Untitled1(:,5))
-plot(Untitled1(:,6))
-xlim([0 1000])
-
-
-figure
-plot(jump5(:,1))
-hold on
-plot(jump5(:,2))
-plot(jump5(:,3))
-xlim([2467 5067])
-
-figure
-plot(jump5(:,4))
-hold on
-plot(jump5(:,5))
-plot(jump5(:,6))
-xlim([2467 5067])
-
-
-T = array2table(jump3(2267:5067, :))
-T.Properties.VariableNames(1:9) = {'acc x','acc y','acc z',...
-    'gyro x','gyro y','gyro z','temp','humidity','timestamp'}
-writetable(T,'jump.16_01_2023_09_44.csv')
-
-

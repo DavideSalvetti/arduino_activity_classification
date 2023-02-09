@@ -23,7 +23,7 @@ Per l'attività di classificazione dell'attività si è scelto di utilizzare un 
 \todo{inserire foto schermata di acquisizione}
 Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio su cui viene scritta una caratteristica che contiene i dati delle misure. Il central viene notificato ogniqualvolta che il \textit{peripheral} aggiorna la caratteristica e ne legge il contenuto il quale viene salvato su un file .csv.
 
-Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui un funzione di callback venie chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay}, che non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare una applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Ciò però non si è mostrato sufficiente a garantire un frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e portava alla perdita di alcuni dati. \todo{abbiamo una foto della distribuzione iniziale dei residui?} 
+Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui un funzione di callback venie chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay}, che non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare una applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Ciò però non si è mostrato sufficiente a garantire un frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e portava alla perdita di alcuni dati.
 Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \url{https://github.com/rlogiacco/CircularBuffer}. In questo modo, se la comunicazione subisce un ritardo non si ha perdita dei dati. Di seguito si riportano un esempio dei dati dell'accelerometro e giroscopio ottenuti durante una camminata di un soggetto (\Fig\ref{fig:imu_data}).
 \begin{figure}[tbh]
 	\centering
@@ -31,11 +31,19 @@ Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \
 	\caption{Dati acquisiti dall'accelerometro e giroscopio durante una camminata. I dati sono campionati ogni \SI{15}{\milli\second} e sono stati filtrati con un filtro passa basso con frequenza di taglio di \SI{20}{\hertz}.}
 	\label{fig:imu_data}
 \end{figure}
-Nella figura \ref{fig:time_interval} sono rappresentati gli intervalli di tempo tra due acquisizioni successive su una misura di \SI{76}{\second}. Il tempo medio risultate è di \SI{15.0057}{\milli\second} con una deviazione standard di \SI{0.4405}{\milli\second}. Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizione è stato misurato con la funzione \textit{millis()}, che ha errore di $\pm \SI{1}{\milli\second}$. 
+Nella figura \ref{fig:time_interval}a) sono rappresentati gli intervalli di tempo tra due acquisizioni successive su una misura di \SI{76}{\second}. Il tempo medio risultate è di \SI{15.0057}{\milli\second} con una deviazione standard di \SI{0.4405}{\milli\second}. Senza buffer circolare (\Fig\ref{fig:time_interval}b)) si ottiene una media di circa \SI{16.1630}{\milli\second} con una deviazione standard di \SI{6}{\milli\second}. Infatti, è possibile vedere nell'immagine che si hanno molti più outliner.
+Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizione è stato misurato con la funzione \textit{millis()}, che ha errore di $\pm \SI{1}{\milli\second}$. 
 \begin{figure}[tbh]
 	\centering
-	\includegraphics[width=0.5\linewidth]{./ImageFiles/interval_time.pdf}
-	\caption{Tempo tra due campioni su una acquisizione di \SI{76}{\second}.}
+	a)
+	\begin{minipage}{.900\textwidth}
+		\includegraphics[width=0.8\linewidth]{./ImageFiles/interval_time.pdf}
+	\end{minipage}
+	\\b)
+	\begin{minipage}{.900\textwidth}
+		\includegraphics[width=\linewidth]{./ImageFiles/interval_time_2}
+	\end{minipage}
+	\caption{Tempo tra due campioni su una acquisizione di \SI{76}{\second}: a) con buffer circolare, b) senza buffer circolare}
 	\label{fig:time_interval}
 \end{figure}
 

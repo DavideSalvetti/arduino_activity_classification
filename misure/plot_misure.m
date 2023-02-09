@@ -58,6 +58,18 @@ title('Acquisition interval between two samples')
 m_1=mean(d_1)
 s_1 = std(d_1)
 
+figure
+d_2 = diff(Untitled(:,9));
+plot(d_2,'o');
+ylim([13 140])
+xlim([0 5067])
+xlabel('sample')
+ylabel('Time [ms]')
+title('Acquisition interval between two samples')
+
+m_2=mean(d_2)
+s_2 = std(d_2)
+
 
 figure 
 hold on

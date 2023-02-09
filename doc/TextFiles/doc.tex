@@ -43,15 +43,15 @@ Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizi
 	\begin{minipage}{.900\textwidth}
 		\includegraphics[width=\linewidth]{./ImageFiles/interval_time_2}
 	\end{minipage}
-	\caption{Tempo tra due campioni su una acquisizione di \SI{76}{\second}: a) con buffer circolare, b) senza buffer circolare}
+	\caption{Tempo tra due campioni successivi su una acquisizione di \SI{76}{\second}: a) con buffer circolare, b) senza buffer circolare}
 	\label{fig:time_interval}
 \end{figure}
 
-\section{Edge Impulse}
+\section{Classificazione delle attività}
+
 \todo{inserirei qui un po una minima spiegazione dei dati... tipo che quale asse è migliore, su quale si vede meglio i passi e cosi}
 \todo{I dati acquisisti sono stati caricati su Edge Impulse. Come è stato creato l'impulse. Su cosa lavora. Cosa produce edge impulse. Come son state modificate le finestre. Feature spettrali. Bontà del modello e testing.}
 
-\section{Classificazione delle attività}
 Per realizzare la classificazione e poi visualizzarla sull'applicazione è stato sviluppato un ulteriore firmware, al cui interno sono stati creati due thread differenti. Nel primo vengono acquisiti i dati dai sensori fino a quando il buffer non risulta pieno, mentre nel secondo si aggiorna il collegamento BLE in modo da poter trasmettere successivamente la previsione della classificazione. Una volta che il buffer è pieno si estraggono i suoi elementi tramite Digital Signal Processing in modo da convertire il buffer in un segnale, che viene poi passato al classificatore per fare inferenza. La realizzazione concreta della classificazione prevede di richiamare le librerie di Edge Impulse. Infine il risultato della classificazione viene trasmesso tramite una caratteristica su BLE all'applicazione, che mostra a video l'immagine relativa all'attività fisica rilevata. Le possibili schermate visualizzate sull'applicazione si distinguono in base all'attività come mostrato nella figura \ref{fig:attivitafisica}.
 
 \begin{figure}[tbh]

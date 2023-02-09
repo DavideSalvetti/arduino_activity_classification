@@ -23,15 +23,15 @@ Per l'attività di classificazione dell'attività si è scelto di utilizzare un 
 \todo{inserire foto schermata di acquisizione}
 Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio su cui viene scritta una caratteristica che contiene i dati delle misure. Il central viene notificato ogniqualvolta che il \textit{peripheral} aggiorna la caratteristica e ne legge il contenuto il quale viene salvato su un file .csv.
 
-Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui un funzione di callback venie chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay}, che non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare una applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Ciò però non si è mostrato sufficiente a garantire un frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e portava alla perdita di alcuni dati.
-Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \url{https://github.com/rlogiacco/CircularBuffer}. In questo modo, se la comunicazione subisce un ritardo non si ha perdita dei dati. Di seguito si riportano un esempio dei dati dell'accelerometro e giroscopio ottenuti durante una camminata di un soggetto (\Fig\ref{fig:imu_data}).
+Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui un funzione di callback viene chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay}, che non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare un'applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Ciò però non si è mostrato sufficiente a garantire una frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e portava alla perdita di alcuni dati.
+Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \url{https://github.com/rlogiacco/CircularBuffer}. In questo modo, se la comunicazione subisce un ritardo non si ha perdita di dati. Di seguito si riportano un esempio dei dati dell'accelerometro e giroscopio ottenuti durante una camminata di un soggetto (\Fig\ref{fig:imu_data}).
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=1\linewidth]{./ImageFiles/IMU_data_example.pdf}
 	\caption{Dati acquisiti dall'accelerometro e giroscopio durante una camminata. I dati sono campionati ogni \SI{15}{\milli\second} e sono stati filtrati con un filtro passa basso con frequenza di taglio di \SI{20}{\hertz}.}
 	\label{fig:imu_data}
 \end{figure}
-Nella figura \ref{fig:time_interval}a) sono rappresentati gli intervalli di tempo tra due acquisizioni successive su una misura di \SI{76}{\second}. Il tempo medio risultate è di \SI{15.0057}{\milli\second} con una deviazione standard di \SI{0.4405}{\milli\second}. Senza buffer circolare (\Fig\ref{fig:time_interval}b)) si ottiene una media di circa \SI{16.1630}{\milli\second} con una deviazione standard di \SI{6}{\milli\second}. Infatti, è possibile vedere nell'immagine che si hanno molti più outliner.
+Nella figura \ref{fig:time_interval}a) sono rappresentati gli intervalli di tempo tra due acquisizioni successive su una misura di \SI{76}{\second}. Il tempo medio risultante è di \SI{15.0057}{\milli\second} con una deviazione standard di \SI{0.4405}{\milli\second}. Senza buffer circolare (\Fig\ref{fig:time_interval}b)) si ottiene una media di circa \SI{16.1630}{\milli\second} con una deviazione standard di \SI{6}{\milli\second}. Infatti, è possibile vedere nell'immagine che si hanno molti più outliner.
 Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizione è stato misurato con la funzione \textit{millis()}, che ha errore di $\pm \SI{1}{\milli\second}$. 
 \begin{figure}[tbh]
 	\centering
@@ -48,11 +48,12 @@ Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizi
 \end{figure}
 
 \section{Classificazione delle attività}
-\todo{inserirei qui un po una minima spiegazione dei dati... tipo che quale asse è migliore, su quale si vede meglio i passi e cosi}
-\todo{I dati acquisisti sono stati caricati su Edge Impulse. Come è stato creato l'impulse. Su cosa lavora. Cosa produce edge impulse. Come son state modificate le finestre. Feature spettrali. Bontà del modello e testing.}
-
-Per realizzare la classificazione e poi visualizzarla sull'applicazione è stato sviluppato un ulteriore firmware, al cui interno sono stati creati due thread differenti. Nel primo vengono acquisiti i dati dai sensori fino a quando il buffer non risulta pieno, mentre nel secondo si aggiorna il collegamento BLE in modo da poter trasmettere successivamente la previsione della classificazione. Una volta che il buffer è pieno si estraggono i suoi elementi tramite Digital Signal Processing in modo da convertire il buffer in un segnale, che viene poi passato al classificatore per fare inferenza. La realizzazione concreta della classificazione prevede di richiamare le librerie di Edge Impulse. Infine il risultato della classificazione viene trasmesso tramite una caratteristica su BLE all'applicazione, che mostra a video l'immagine relativa all'attività fisica rilevata. Le possibili schermate visualizzate sull'applicazione si distinguono in base all'attività come mostrato nella figura \ref{fig:attivitafisica}.
-
+Come si può notare dalla figura \ref{fig:imu_data}, i grafici più espressivi sono quelli riguardanti l'asse z. Questo è dovuto al fatto che, per la posizione in cui si trova Arduino sulla gamba dell'individuo, l'asse z corrisponde alla direzione lungo la quale è possibile rilevare ad esempio i singoli passi effettuati durante la camminata. Considerando l'accelerometro, i singoli passi corrispondono ai picchi presenti nel segnale rappresentato.
+Successivamente per realizzare la classificazione e poi visualizzarne la previsione sull'applicazione è stato sviluppato un ulteriore firmware, al cui interno sono stati creati due thread differenti.
+Nel primo vengono acquisiti i dati dai sensori fino a quando il buffer non risulta pieno. Una volta che questa condizione si verifica, si estraggono gli elementi del buffer tramite Digital Signal Processing (DSP) in modo da convertire il buffer in un segnale. Poi questo segnale viene passato al classificatore e di conseguenza alle librerie di Edge Impulse per fare inferenza.
+\todo{Come è stato creato l'impulse. Su cosa lavora. Cosa produce edge impulse. Come son state modificate le finestre. Feature spettrali. Bontà del modello e testing.}
+Infine il risultato della classificazione viene trasmesso tramite una caratteristica su BLE all'applicazione, che mostra a video l'immagine relativa all'attività fisica rilevata. Le possibili schermate visualizzate sull'applicazione si distinguono in base all'attività come mostrato nella figura \ref{fig:attivitafisica}.
+Invece nel secondo thread si aggiorna il collegamento BLE in modo da poter trasmettere successivamente la previsione della classificazione.
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/cyclette}
@@ -65,7 +66,6 @@ Per realizzare la classificazione e poi visualizzarla sull'applicazione è stato
 \todo{manca schermata walking}
 
 Invece nei momenti in cui non si riesce a classificare l'attività in corso in nessuna di quelle possibili si visualizza la schermata della figura \ref{fig:attesa}.
-
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/unknown}
@@ -79,5 +79,11 @@ Invece nei momenti in cui non si riesce a classificare l'attività in corso in n
 
 \subsection{Arduino}
 \todo{integrazione libreria da edge impulse, spiegazione dei thread, ottimizzazione del codice con buffer circolare (forse), funzionamento generale con flowchart sul funzionamento dei thread così è piu facile che spiegare a parole}
+\begin{figure}[tbh]
+	\centering
+	\includegraphics[width=0.8\linewidth]{./ImageFiles/SM_classification}
+	\caption{Macchina a stati del firmware di classificazione dei dati.}
+	\label{fig:SM_classif}
+\end{figure}
 
 \todo{Quali sono i tempi che impiega il firmware. Per passare da una attività all'altra servono circa tot secondi perchè si deve svuotare il buffer.}

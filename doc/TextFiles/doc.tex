@@ -1,21 +1,18 @@
 \section{Introduzione}
-Lo scopo di questo progetto consiste nella classificazione dell'attività fisica svolta da un individuo grazie a delle misure ottenute con una board Arduino Nano 33 BLE Sense posizionata sulla caviglia del soggetto. 
-
-
-
-
-L'acquisizione dei dati da parte di Arduino inizia soltanto dopo aver connesso la board a un'applicazione, che può essere scaricata su un qualsiasi dispositivo e che permette in seguito di visualizzare la previsione della classificazione. Per rilevare le misure sono stati utilizzati i seguenti sensori presenti sulla board:
+Lo scopo di questo progetto consiste nella classificazione dell'attività fisica svolta da un individuo grazie a delle misure ottenute con una board Arduino Nano 33 BLE Sense posizionata sopra la caviglia di un soggetto. Dopo essersi connessi alla board tramite BLE e in base al firmware caricato sull'Arduino, è possibile utilizzare l'applicazione in due modalità:
 \begin{itemize}
-	\item accelerometro, che ha consentito di ricavare l'accelerazione sui tre assi (x, y e z);
-	\item giroscopio, che ha consentito di ricavare la velocità di rotazione sui tre assi (x, y e z);
-	\item sensore di temperatura e di umidità, che ha consentito di ricavare la temperatura (in gradi Celsius) e l'umidità.
+	\item modalità acquisizione dati: l'applicazione riceve e salva i dati inviati dalla piattaforma;
+	\item modalità activity tracker: l'applicazione visualizza la predizione dell'attività che il soggetto sta svolgendo (camminata, cyclette, salto con la corda oppure l'individuo è fermo).
 \end{itemize}
-Di tutti questi dati, però, nella classificazione non sono stati considerati la temperatura e l'umidità perchè si sono rivelati non significativi per il tipo di classificazione eseguita.
+Sono stati utilizzati i seguenti sensori presenti sulla board:
+\begin{itemize}
+	\item accelerometro triassiale;
+	\item giroscopio triassiale;
+	\item sensore di temperatura e di umidità.
+\end{itemize}
+Tuttavia, i dati di temperatura e umidità non sono stati utilizzati poiché i dati ricavati non si sono mostrati essere significativi per l'obiettivo di questo progetto.
 
-
-La metodologia utilizzata per classificare le attività prevede l'utilizzo di una \textit{black box}, che analizza le misure ricevute in ingresso e restituisce come output una loro classificazione. Questo è stato realizzato mediante una piattaforma di Machine Learning, denominata Edge Impulse, che fornisce delle librerie di classificazione. Le possibili tipologie di attività fisica che possono essere individuate sono: cyclette, fermo, salto della corda e camminata. Analogamente, questa tecnica può essere seguita anche per classificare ulteriori attività fisiche (ad esempio la corsa).
-
-Infine i risultati della classificazione vengono mostrati in tempo reale all'individuo sempre attraverso l'applicazione.
+Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing}, è stato possibile realizzare una applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e della predizione dell'attività svolta. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
 
 \section{Acquisizione dei dati}
 Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di eseguire le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui è stato utilizzato Arduino come \textit{Peripheral}, che trasmette i dati sotto forma di caratteristiche, e l'applicazione come \textit{Central}, che li riceve.

@@ -19,9 +19,9 @@ CircularBuffer<float, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE> circular_buffer;
 BLEService prediction_service("e2e65ffc-5687-4cbe-8f2d-db76265f269a");
 BLEUnsignedCharCharacteristic prediction_characteristic("3000", BLERead | BLENotify);
 
-bool connected = false; //a central is connected
+bool connected = false; //true if a central is connected
 bool send_BLE = false; //true if data available to be sent
-bool buffer_full = false; //buffer become full for first time
+bool buffer_full = false; //true if buffer become full for first time
 
 static rtos::Thread dataread_thread(osPriorityRealtime);
 static rtos::Thread BLE_thread(osPriorityBelowNormal);

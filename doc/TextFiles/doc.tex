@@ -16,10 +16,10 @@ Tuttavia, i dati di temperatura e umidità non sono stati utilizzati poiché i d
 	\item giroscopio: fondo scala 2000 dps, frequenza di campionamento \SI{119}{\hertz}.
 \end{itemize}
 
-Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing}, è stato possibile realizzare una applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e della predizione dell'attività svolta. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
+Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing}, è stato possibile realizzare un'applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e della predizione dell'attività svolta. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
 \todo{se riesco questo weekend misuro la corrente assorbita con un tester}
 \section{Acquisizione dei dati}
-\todo{mettere foto posizione arduino su gamba}
+\todo{mettere foto posizione Arduino su gamba}
 \todo{inserire foto schermata di acquisizione}
 Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio su cui viene scritta una caratteristica che contiene i dati delle misure. Il central viene notificato ogniqualvolta che il \textit{peripheral} aggiorna la caratteristica e ne legge il contenuto il quale viene salvato su un file .csv.
 
@@ -43,17 +43,16 @@ Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizi
 	\begin{minipage}{.900\textwidth}
 		\includegraphics[width=\linewidth]{./ImageFiles/interval_time_2}
 	\end{minipage}
-	\caption{Tempo tra due campioni successivi su una acquisizione di \SI{76}{\second}: a) con buffer circolare, b) senza buffer circolare}
+	\caption{Tempo tra due campioni successivi su un'acquisizione di \SI{76}{\second}: a) con buffer circolare, b) senza buffer circolare.}
 	\label{fig:time_interval}
 \end{figure}
 
-\section{Classificazione delle attività}
+\section{Classificazione delle attività} \label{classifSect}
 Come si può notare dalla figura \ref{fig:imu_data}, i grafici più espressivi sono quelli riguardanti l'asse z. Questo è dovuto al fatto che, per la posizione in cui si trova Arduino sulla gamba dell'individuo, l'asse z corrisponde alla direzione lungo la quale è possibile rilevare ad esempio i singoli passi effettuati durante la camminata. Considerando l'accelerometro, i singoli passi corrispondono ai picchi presenti nel segnale rappresentato.
-Successivamente per realizzare la classificazione e poi visualizzarne la previsione sull'applicazione è stato sviluppato un ulteriore firmware, al cui interno sono stati creati due thread differenti.
-Nel primo vengono acquisiti i dati dai sensori fino a quando il buffer non risulta pieno. Una volta che questa condizione si verifica, si estraggono gli elementi del buffer tramite Digital Signal Processing (DSP) in modo da convertire il buffer in un segnale. Poi questo segnale viene passato al classificatore e di conseguenza alle librerie di Edge Impulse per fare inferenza.
-\todo{Come è stato creato l'impulse. Su cosa lavora. Cosa produce edge impulse. Come son state modificate le finestre. Feature spettrali. Bontà del modello e testing.}
-Infine il risultato della classificazione viene trasmesso tramite una caratteristica su BLE all'applicazione, che mostra a video l'immagine relativa all'attività fisica rilevata. Le possibili schermate visualizzate sull'applicazione si distinguono in base all'attività come mostrato nella figura \ref{fig:attivitafisica}.
-Invece nel secondo thread si aggiorna il collegamento BLE in modo da poter trasmettere successivamente la previsione della classificazione.
+Successivamente per realizzare la classificazione dei dati acquisiti dai sensori di Arduino e poi per visualizzarne la previsione sull'applicazione è stato sviluppato un ulteriore firmware, al cui interno sono stati creati 3 thread differenti che verranno analizzati più in dettaglio nella sezione \ref{arduinoSect}. Inoltre nel firmware sono stati gestiti anche due eventi che si possono verificare: uno si verifica quando il dispositivo si collega al BLE e quindi si riesce a scrivere il valore della predizione nella sua apposita caratteristica, mentre l'altro avviene quando il dispositivo risulta scollegato dal BLE e di conseguenza viene svuotato il buffer circolare.
+In generale il funzionamento del firmware prevede che inizialmente si riempie il buffer con i dati provenienti dai sensori, poi questi dati vengono trasformati in un segnale tramite Digital Signal Processing (DSP) che viene poi passato al classificatore di Edge Impulse per fare inferenza.
+\todo{Come è stato creato l'impulse. Su cosa lavora. Cosa produce Edge Impulse. Come son state modificate le finestre. Feature spettrali. Bontà del modello e testing.}
+Infine il risultato della classificazione, ovvero la previsione, viene trasmesso in una caratteristica del BLE all'applicazione, che a sua volta mostra a video l'immagine relativa all'attività fisica rilevata. Le schermate che possono essere visualizzate sull'applicazione si distinguono in base all'attività fisica rilevata come mostrato nella figura \ref{fig:attivitafisica}.
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/cyclette}
@@ -64,26 +63,26 @@ Invece nel secondo thread si aggiorna il collegamento BLE in modo da poter trasm
 	\label{fig:attivitafisica}
 \end{figure}
 \todo{manca schermata walking}
-
-Invece nei momenti in cui non si riesce a classificare l'attività in corso in nessuna di quelle possibili si visualizza la schermata della figura \ref{fig:attesa}.
+Invece nei momenti subito dopo la connessione del dispositivo al BLE oppure nei momenti in cui non si riesce a classificare l'attività in corso tra quelle possibili sull'applicazione viene visualizzata la schermata della figura \ref{fig:attivitaignota}.
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/unknown}
-	\caption{Schermata per le attese precedenti la classificazione o per misure non classificabili.}
-	\label{fig:attesa}
+	\caption{Schermata per l'attesa iniziale dopo la connessione al BLE o per misure non classificabili.}
+	\label{fig:attivitaignota}
 \end{figure}
-
 
 \subsection{Edge Impulse}
 \todo{spiegazione framework, inserimento dati, suddivisione in training e test, foto dashboard, parametri di allenamento e risultati}
 
-\subsection{Arduino}
-\todo{integrazione libreria da edge impulse, spiegazione dei thread, ottimizzazione del codice con buffer circolare (forse), funzionamento generale con flowchart sul funzionamento dei thread così è piu facile che spiegare a parole}
+\subsection{Arduino} \label{arduinoSect}
+ \todo{ottimizzazione del codice con buffer circolare (forse)}
+Come preannunciato nella sezione \ref{classifSect}, il firmware per la classificazione è strutturato in 3 thread. Il loro funzionamento è rappresentato con la macchina a stati della figura \ref{fig:SM_classif}).
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.8\linewidth]{./ImageFiles/SM_classification}
-	\caption{Macchina a stati del firmware di classificazione dei dati.}
+	\caption{Macchina a stati del firmware di classificazione dei dati sensoriali.}
 	\label{fig:SM_classif}
 \end{figure}
-
-\todo{Quali sono i tempi che impiega il firmware. Per passare da una attività all'altra servono circa tot secondi perchè si deve svuotare il buffer.}
+Nel Loop thread, la chiamata al classificatore corrisponde all'utilizzo delle librerie di Edge Impulse. Questa chiamata richiede come parametri in input il segnale, la variabile in cui salvare la previsione e un parametro che caratterizza l'inferenza.
+\todo{integrazione libreria da Edge Impulse}
+Per quanto riguarda i tempi di classificazione, il tempo necessario per passare da una classificazione alla successiva e quindi per cambiare la previsione è di circa 40-45 secondi. Questo tempo è dovuto al fatto che si deve svuotare il buffer e che si deve identificare per 6 volte la stessa attività prima di specificarla come previsione.

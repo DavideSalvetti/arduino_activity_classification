@@ -27,7 +27,6 @@ static rtos::Thread dataread_thread(osPriorityRealtime);
 static rtos::Thread BLE_thread(osPriorityBelowNormal);
 osThreadId_t main_thread_id; //id of loop main
 
-void run_inference_background();
 void get_IMU_data();
 void update_BLE();
 

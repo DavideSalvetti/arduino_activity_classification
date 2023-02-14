@@ -10,22 +10,23 @@ Per questo progetto sono stati utilizzati i seguenti sensori presenti sulla boar
 	\item giroscopio triassiale;
 	\item sensore di temperatura e di umidità.
 \end{itemize}
-Tuttavia, i dati di temperatura e umidità non sono stati utilizzati poiché i dati ricavati non si sono mostrati essere significativi per l'obiettivo di questo progetto. Inoltre, è stato necessario modificare la libreria che gestisce la comunicazione con la IMU presente sul BLE\todo{presente sul modulo volevi dire? Non è sul BLE la imu o sbaglio?} (file \texttt{LSM9DS1.cpp}) per cambiare il fondo scala dell'accelerometro (che di default è impostato a 4g):
+Tuttavia, i dati di temperatura e umidità non sono stati utilizzati poiché i dati ricavati non si sono mostrati essere significativi per l'obiettivo di questo progetto. Inoltre, è stato necessario modificare la libreria che gestisce la comunicazione con la IMU (file \texttt{LSM9DS1.cpp}) per cambiare il fondo scala dell'accelerometro (che di default è impostato a 4g):
 \begin{itemize}
 	\item accelerometro: fondo scala 8g, frequenza di campionamento \SI{119}{\hertz};
 	\item giroscopio: fondo scala 2000 dps, frequenza di campionamento \SI{119}{\hertz}.
 \end{itemize}
 
-Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing}, è stato possibile realizzare un'applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e della predizione dell'attività svolta\todo{riguardare la seconda parte se troviamo un modo migliore di dirlo, sembra che l'app si occupa della predizione ad una prima lettura. Magri "e dell'attività svolta predetta dalla rete neurale presente sulla board"}. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
-\todo{se riesco questo weekend misuro la corrente assorbita con un tester}
+Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing}, è stato possibile realizzare un'applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e del risultato della predizione dell'all'attività ricevuta dall'Arduino. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
+
+\clearpage
+
 \section{Acquisizione dei dati}
 \begin{figure}[tbh]
 	\centering
-	\includegraphics[angle=-90, width=0.5\linewidth]{./ImageFiles/arduino_su_gamba.jpg}
+	\includegraphics[width=0.4\linewidth]{./ImageFiles/arduino_su_gamba_frame.jpg}
 	\caption{Arduino posizionato sulla gamba del soggetto con sistema di riferimento.}
 	\label{fig:arduino_su_gamba}
 \end{figure}
-\todo{inserire sistema di riferimento sull'immagine}
 \todo{inserire foto schermata di acquisizione}
 Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio con una caratteristica su cui vengono scritti i dati delle misure. Il central viene notificato ogni volta che il \textit{peripheral} aggiorna la caratteristica e ne legge il contenuto salvandolo in un file .csv.
 
@@ -53,54 +54,44 @@ Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizi
 	\label{fig:time_interval}
 \end{figure}
 
+\clearpage
+
 \section{Classificazione delle attività} \label{classifSect}
-Come si può notare dalla figura \ref{fig:imu_data}, i grafici più espressivi sono quelli riguardanti l'asse z. Questo è dovuto al fatto che, per la posizione in cui si trova Arduino sulla gamba dell'individuo, l'asse z corrisponde alla direzione lungo la quale è possibile rilevare ad esempio i singoli passi effettuati durante la camminata. Considerando l'accelerometro, i singoli passi corrispondono ai picchi presenti nel segnale rappresentato.
-Successivamente per realizzare la classificazione dei dati acquisiti dai sensori di Arduino e poi per visualizzarne la previsione sull'applicazione è stato sviluppato un ulteriore firmware, al cui interno sono stati creati 3 thread differenti che verranno analizzati più in dettaglio nella sezione \ref{arduinoSect}. Inoltre nel firmware sono stati gestiti anche due eventi che si possono verificare: uno si verifica quando il dispositivo si collega al BLE e quindi si riesce a scrivere il valore della predizione nella sua apposita caratteristica, mentre l'altro avviene quando il dispositivo risulta scollegato dal BLE e di conseguenza viene svuotato il buffer circolare.
-In generale il funzionamento del firmware prevede che inizialmente si riempie il buffer con i dati provenienti dai sensori, poi questi dati vengono trasformati in un segnale\todo{tramire il DSP il buffer viene trasformato in un elenco di feature che vengono passate al classificatore} tramite Digital Signal Processing (DSP) che viene poi passato al classificatore realizzato su Edge Impulse per fare inferenza.
-\todo{Come è stato creato l'impulse. Su cosa lavora. Cosa produce Edge Impulse. Come son state modificate le finestre. Feature spettrali. Bontà del modello e testing.}
-Infine il risultato della classificazione, ovvero la previsione, viene trasmesso in una caratteristica del BLE all'applicazione, che a sua volta mostra a video l'immagine relativa all'attività fisica rilevata. Le schermate che possono essere visualizzate sull'applicazione si distinguono in base all'attività fisica rilevata come mostrato nella figura \ref{fig:attivitafisica}.
+Nella figura \ref{fig:imu_data} sono rappresentati un esempio di dati raccolti durante la camminata di un soggetto. Osservando i dati dell'accelerometro è possibile notare dei picchi, che corrispondono ai movimenti dei passi del soggetto. In particolare, per come è stato posizionato l'Arduino (\Fig\ref{fig:imu_data}), è possibile notare il contributo della forza di gravità sull'asse y che causa un offset di circa 1g nelle misure. Invece, per quanto riguarda le misure del giroscopio, è interessante notare che lungo l'asse z è possibile notare il movimento di rotazione del piede attorno alla caviglia durante la camminata. 
+
+Per realizzare la classificazione dei dati acquisiti dai sensori di Arduino e poi per visualizzarne la previsione sull'applicazione è stato sviluppato un ulteriore firmware, al cui interno sono stati utilizzati tre thread differenti, che verranno analizzati più in dettaglio nella sezione \ref{arduinoSect}, che si occupano di ricavare i dati dalla IMU, inviare il risultato della predizione tramite BLE e di effettuare la predizione. In generale il funzionamento del firmware prevede che inizialmente si riempie un buffer circolare con i dati provenienti dai sensori. Tramite un DSP il buffer viene trasformato in un elenco di feature che vengono passate al classificatore realizzato grazie al framework Edge Impulse. Infine, il risultato della classificazione viene trasmesso tramite BLE all'applicazione, che a sua volta mostra a video l'immagine relativa all'attività fisica rilevata. Le schermate che possono essere visualizzate sull'applicazione si distinguono in base all'attività fisica rilevata come mostrato nella figura \ref{fig:attivitafisica}. Nei momenti subito dopo la connessione del dispositivo al BLE oppure nei momenti in cui non si riesce a classificare l'attività in corso sull'applicazione viene visualizzata la scritta \textit{"Unknown"}, che indica che non si è in grado di riconosce l'attività.
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/cyclette}
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/idle}
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/jumping}
 	%\includegraphics[width=0.4\linewidth]{./ImageFiles/walking}
-	\caption{Schermate per le possibili attività: cyclette, fermo, salto della corda e camminata.}
+	\includegraphics[width=0.4\linewidth]{./ImageFiles/unknown}
+	\caption{Schermate per le possibili attività: cyclette, fermo, salto della corda, camminata e attività non riconosciuta.}
 	\label{fig:attivitafisica}
 \end{figure}
 \todo{manca schermata walking}
-Invece nei momenti subito dopo la connessione del dispositivo al BLE oppure nei momenti in cui non si riesce a classificare l'attività in corso tra quelle possibili sull'applicazione viene visualizzata la schermata della figura \ref{fig:attivitaignota}.
-\begin{figure}[tbh]
-	\centering
-	\includegraphics[width=0.4\linewidth]{./ImageFiles/unknown}
-	\caption{Schermata per l'attesa iniziale dopo la connessione al BLE o per misure non classificabili.}
-	\label{fig:attivitaignota}
-\end{figure}
 
 \subsection{Edge Impulse}
-\todo{spiegazione framework, inserimento dati, suddivisione in training e test, foto dashboard, parametri di allenamento e risultati}
-Edge Impulse è una piattaforma online per lo sviluppo di algoritmi di machine learning per edge devices. Tramite Edge Impulse è possibile creare un modello da poter caricare sul dispositivo finale seguendo quattro semplici passi: aqcuisizione dei dati, design del modello, test del modello e deploy del modello. 
+Edge Impulse è una piattaforma online per lo sviluppo di algoritmi di machine learning per \textit{edge devices}. Tramite Edge Impulse è possibile creare un modello da poter caricare sul dispositivo finale seguendo quattro semplici passi: aqcuisizione dei dati, design del modello, test del modello e deploy del modello. 
 
-Per prima cosa sono stati acquisiti i dati delle quattro categorie di attività fisica da classificare (idle, walking, jumping e cycling). Essendo un modello ML, maggiore è il numero dei dati, più preciso è il modello. I dati acquisiti sono stati poi caricati sulla piattaforma Edge Impulse. Come si può osservare in figura \ref{fig:acquisizione_dati}, è possibile dividere i dati in \textit{training set} e \textit{test set}: Edge Impulse suggerisce di dividere i dati di train e di test con una percentuale rispettivamente di 80\% e 20\%.
+Per prima cosa sono stati acquisiti i dati delle quattro categorie di attività fisica da classificare (idle, walking, jumping e cycling). Essendo un modello di \textit{machine learning}, maggiore è il numero dei dati, maggiore è la qualità del modello stimato. I dati acquisiti sono  quindi stati caricati sulla piattaforma Edge Impulse sono stati divisi in \textit{training set} e \textit{test set} (\Fig\ref{fig:acquisizione_dati}). Edge Impulse suggerisce di dividere i dati di train e di test con una percentuale rispettivamente di 80\% e 20\%.
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=0.5\linewidth]{./ImageFiles/data_acquisition.jpg}
-	\caption{Schermata di Edge Impulse dove è possibile inserire nuovi campioni.}
+	\caption{Pagina di Edge Impulse per l'inserimento di nuovi campioni.}
 	\label{fig:acquisizione_dati}
 \end{figure}
-
-Successivamente, è stato creato un \textit{impulse}: questa fase prevede la scelta delle finestre dei dati con relativa frequenza, di un blocco di processamento dei dati e di un blocco di learning (figura \ref{label}).
+Successivamente, è stato creato un \textit{impulse}: questa fase prevede la scelta delle finestre di un blocco di processamento dei dati e di un blocco di learning (figura \ref{fig:creazione_impulse}).
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=0.5\linewidth]{./ImageFiles/creazione_impulse.jpg}
 	\caption{Schermata di Edge Impulse per la creazione di un nuovo \textit{impulse} tramite la scelta di ciascun blocco.}
 	\label{fig:creazione_impulse}
 \end{figure}
-
-I campioni vengono analizzati tramite finestre di 15 secondi con una slinding window di 10 secondi. La frequenza di campionamento viene ricavata a partire dai dati poichè in essi è presente il campo \texttt{timestamp}, ed è pari circa a \SI{66}{\hertz}.
-Per il processamento dei dati è stato scelto un DSP che analizza le feature spettrali dei segnali provenienti da accelerometro e giroscopio. Come anticipato in precedenza, non sono stati inclusi i campi temperatura e umidità, ma nemmeno il giroscopio sull'asse x: infatti, osservando la figura \ref{fig:arduino_su_gamba}, si può notare che l'asse x è posizionato verticalmente e variazioni nel valore del giroscopio su tale asse si possono ricondurre a cambi di direzione durante il percorso che non sono significativi per la classificazione dell'attività\todo{per favore rileggere se ha senso, è un po complesso}.
-Per l'analisi spettrale è stato scelto di introdurre un filtro passa-basso con frequenza di taglio a \SI{20}{\hertz} del sesto ordine ed è stato analizzato il logaritmo della densità spettrale di potenza (figura \ref{fig:spectral_feature}). Una volta definiti i parametri dell'analisi spettrale, il modello estrae le features dai dati di test e visualizza su un grafico i dataset divisi per somiglianza delle features; inoltre mostra l'importanza delle feature estratte per comparare le diverse classi: alcune delle feature più importanti sono il valore quadratico medio dell'accelerometro sull'asse x, la densità spettrale di potenza del giroscopio sull'asse z tra \SI{4.82}{\hertz} e \SI{5.08}{\hertz} e la densità spettrale di potenza dell'accelerometro sull'asse y tra \SI{4.56}{\hertz} e \SI{4.82}{\hertz} (figura \ref{fig:spectral_feature}).  
-
+I campioni vengono analizzati su finestre di 15 secondi con una \textit{slinding window} di 10 secondi. La frequenza di campionamento viene ricavata a partire dai dati grazie al campo \texttt{timestamp} ed è pari circa a \SI{66}{\hertz}.
+Per il processamento dei dati è stato scelto un DSP che analizza le feature spettrali dei segnali provenienti da accelerometro e giroscopio. Come anticipato in precedenza, non sono stati inclusi i campi temperatura e umidità e nemmeno il giroscopio sull'asse x che non fornisce dati significativi.
+Per l'analisi spettrale è stato scelto di introdurre un filtro passa-basso con frequenza di taglio a \SI{20}{\hertz} del sesto ordine ed è stato analizzato il logaritmo della densità spettrale di potenza (figura \ref{fig:spectral_feature}). Una volta definiti i parametri dell'analisi spettrale, il modello estrae le features dai dati di test e viene visualizzato un grafico con i dataset divisi per somiglianza delle features; inoltre mostra l'importanza delle feature estratte per comparare le diverse classi: alcune delle feature più importanti sono il valore quadratico medio dell'accelerometro sull'asse x, la densità spettrale di potenza del giroscopio sull'asse z tra \SI{4.82}{\hertz} e \SI{5.08}{\hertz} e la densità spettrale di potenza dell'accelerometro sull'asse y tra \SI{4.56}{\hertz} e \SI{4.82}{\hertz} (figura \ref{fig:spectral_feature}). \todo{non molto chiaro/fluent per matteo}
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=0.49\linewidth]{./ImageFiles/spectral_features.jpg}
@@ -108,24 +99,18 @@ Per l'analisi spettrale è stato scelto di introdurre un filtro passa-basso con 
 	\caption{A sinistra, schermata di Edge Impulse per il settaggio dei parametri per l'estrazione delle feature spettrali. A destra, schermata di Edge Impulse per la visualizzazione dell'importanza di ciascuna features estratta per la distinzione delle varie classi. Inoltre, è possibile osservare le performance stimate di tale analisi sull'Arduino.}
 	\label{fig:spectral_feature}
 \end{figure}
-
-Come blocco di apprendimento è stato scelto un classificatore. La rete neurale riceve in ingresso 400 features ricavate dal blocco DSP precedente e le analiza tramite due Dense Layer, composti rispettivamente da 32 e 16 neuroni, ed un Output Layer che fornisce in uscita la probabilità di appartenenza delle feature in ingresso alle 4 classi. La predizione è la classe con probabilità maggiore. Anche in questo caso vengono mostrate le performance stimate del classificatore sul dispositivo in questione\todo{Qui ci sarebbe una immagine della matrice di confusione carina ma... dice hche l'accuratezza è del 100 per cento e non credo sia proprio corretto. Il problema credo sia sempre quello che i dati son solo miei e forse sono ancora pochi}. 
-
-Una volta sviluppato il modello è possibile testarlo sui dati di test: in figura \ref{fig:model_test} è possibile osservare l'accuratezza del modello sui dati forniti, che è pari al 98.65\%. \todo{Bo, è alta l'accuratezza, sicuramente c'è un po di overfitting ma d'altronde son sempre tutti dati miei e non sono tantissimi. Magari scriviamolo.}
-
+Come blocco di apprendimento è stato scelto un classificatore. La rete neurale riceve in ingresso 400 features ricavate dal blocco DSP precedente e le analiza tramite due Dense Layer, composti rispettivamente da 32 e 16 neuroni, ed un Output Layer che fornisce in uscita la probabilità di appartenenza delle feature in ingresso alle 4 classi. La predizione è la classe con probabilità maggiore. Anche in questo caso vengono mostrate le performance stimate del classificatore sul dispositivo in questione\todo{matteo: io non so bene cosa è quella matrice e nemmeno questa parte. lascio a te giustificarla e inserirla evetualmente)}
+Una volta sviluppato il modello è possibile testarlo sui dati di test: in figura \ref{fig:model_test} è possibile osservare l'accuratezza del modello sui dati forniti, che è pari al 98.65\%. \todo{matteo: siccome non so bene il tutto non posso risponderti se è o non è over. per le mie conoscenze più siamo generici meglio è perché almeno io non saprei giustificare le scelte}
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=0.5\linewidth]{./ImageFiles/model_test.jpg}
 	\caption{Schermata di Edge Impulse per il testing dei dati che mostra l'accuratezza del modello.}
 	\label{fig:model_test}
 \end{figure}
-
 La fase finale è quella di deploy. Il modello sviluppato, comprensivo del blocco DSP per l'estrazione delle features, può essere scaricato dalla piattaforma Edge Impulse come una libreria di Arduino che può essere caricata direttamente sulla board. 
 
-
 \subsection{Arduino} \label{arduinoSect}
- \todo{ottimizzazione del codice con buffer circolare (forse)}
-Come preannunciato nella sezione \ref{classifSect}, il firmware per la classificazione è strutturato in 3 thread. Il loro funzionamento è rappresentato con la macchina a stati della figura \ref{fig:SM_classif}).
+Il funzionamento base del firmware caricato sull'Arduino per la classificazione dei dati è mostrato nella figura \ref{fig:SM_classif}.
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.8\linewidth]{./ImageFiles/SM_classification}
@@ -133,5 +118,5 @@ Come preannunciato nella sezione \ref{classifSect}, il firmware per la classific
 	\label{fig:SM_classif}
 \end{figure}
 Nel Loop thread, la chiamata al classificatore corrisponde all'utilizzo delle librerie di Edge Impulse. Questa chiamata richiede come parametri in input il segnale, la variabile in cui salvare la previsione e un parametro che caratterizza l'inferenza.
-\todo{integrazione libreria da Edge Impulse}
-Per quanto riguarda i tempi di classificazione, il tempo necessario per passare da una classificazione alla successiva e quindi per cambiare la previsione è di circa 40-45 secondi. Questo tempo è dovuto al fatto che si deve svuotare il buffer e che si deve identificare per 6 volte la stessa attività prima di specificarla come previsione.
+
+Per quanto riguarda i tempi di classificazione, il tempo necessario per passare da una classificazione alla successiva e quindi per cambiare la previsione è di circa 40-45 secondi. Questo tempo è dovuto al fatto che si deve svuotare il buffer e che si deve identificare per sei volte la stessa attività prima di specificarla come previsione.

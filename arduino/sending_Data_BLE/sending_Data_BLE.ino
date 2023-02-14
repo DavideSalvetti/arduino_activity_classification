@@ -9,8 +9,8 @@
 #include "string.h"
 #include "NRF52_MBED_TimerInterrupt.h"
 #include "NRF52_MBED_ISR_Timer.h"
-//#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
-#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+#include <C:\Users\Davide\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
+//#include <C:\Users\Matteo\Documents\Arduino\libraries\CircularBuffer\CircularBuffer.h>
 
 CircularBuffer<Nano33BLEAccelerometerData, BUFFER_SIZE> accBuffer; //buffer for accelerometer data
 CircularBuffer<Nano33BLEGyroscopeData, BUFFER_SIZE> gyroBuffer; //buffer for gyroscope data

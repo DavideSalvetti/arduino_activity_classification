@@ -28,7 +28,16 @@ Per l'attività di classificazione dell'attività si è scelto di utilizzare un 
 	\label{fig:arduino_su_gamba}
 \end{figure}
 \todo{inserire foto schermata di acquisizione}
-Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio con una caratteristica su cui vengono scritti i dati delle misure. Il central viene notificato ogni volta che il \textit{peripheral} aggiorna la caratteristica e ne legge il contenuto salvandolo in un file .csv.
+Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio con una caratteristica su cui vengono scritti i dati delle misure. Il central viene notificato ogni volta che il \textit{peripheral} aggiorna la caratteristica e ne legge il contenuto salvandolo in un file .csv che contiene le seguenti colonne: \textit{acc x}, \textit{acc y}, \textit{acc z}, \textit{gyro x}, \textit{gyro y}, \textit{gyro z}, \textit{temp}, \textit{humidity} e \textit{timestamp}. Sull'applicazione è possibile visualizzare i dati ricevuti in real time selezionando quali canali mostrare sul grafico (figura \ref{label}).
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.49\linewidth]{./ImageFiles/acquisition_acc.jpg}
+	\includegraphics[width=0.49\linewidth]{./ImageFiles/acquisition_gyro.jpg}
+	\caption{Schermata di acquisizione dati dell'applicazione: l'immagine a sinistra mostra i segnali dell'accelerometro mentre quella a destra mostra i segnali del giroscopio durante l'attività cyclette.}
+	\label{fig:schermata_acq}
+\end{figure}
+
 
 Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui un funzione di callback viene chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay}, che non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare un'applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Ciò però non si è mostrato sufficiente a garantire una frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e portava alla perdita di alcuni dati.
 Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \url{https://github.com/rlogiacco/CircularBuffer}. In questo modo, se la comunicazione subisce un ritardo non si ha perdita di dati. Di seguito si riporta un esempio dei dati dell'accelerometro e giroscopio ottenuti durante una camminata di un soggetto (\Fig\ref{fig:imu_data}).
@@ -107,7 +116,9 @@ Una volta sviluppato il modello è possibile testarlo sui dati di test: in figur
 	\caption{Schermata di Edge Impulse per il testing dei dati che mostra l'accuratezza del modello.}
 	\label{fig:model_test}
 \end{figure}
-La fase finale è quella di deploy. Il modello sviluppato, comprensivo del blocco DSP per l'estrazione delle features, può essere scaricato dalla piattaforma Edge Impulse come una libreria di Arduino che può essere caricata direttamente sulla board. 
+
+La fase finale è quella di deploy. Il modello sviluppato, comprensivo del blocco DSP per l'estrazione delle features, può essere scaricato dalla piattaforma Edge Impulse come una libreria di Arduino, la quale può essere caricata direttamente sulla board. 
+
 
 \subsection{Arduino} \label{arduinoSect}
 Il funzionamento base del firmware caricato sull'Arduino per la classificazione dei dati è mostrato nella figura \ref{fig:SM_classif}.

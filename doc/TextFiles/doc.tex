@@ -1,5 +1,5 @@
 \section{Introduzione}
-Lo scopo di questo progetto consiste nella classificazione dell'attività fisica svolta da un individuo grazie a delle misure ottenute con la board Arduino Nano 33 BLE Sense posizionata sopra la caviglia del soggetto. Dopo essersi connessi alla board tramite BLE, e a seconda del firmware caricato sull'Arduino, è possibile utilizzare l'applicazione in due modalità:
+Lo scopo di questo progetto consiste nella classificazione dell'attività fisica svolta da un individuo grazie a delle misure ottenute con la board Arduino Nano 33 BLE Sense posizionata sopra la caviglia del soggetto. Dopo essersi connessi alla board tramite BLE e a seconda del firmware caricato sull'Arduino, è possibile utilizzare l'applicazione in due modalità:
 \begin{itemize}
 	\item modalità acquisizione dati: l'applicazione riceve e salva i dati inviati dalla piattaforma;
 	\item modalità activity tracker: l'applicazione visualizza la predizione dell'attività che il soggetto sta svolgendo (camminata, cyclette, salto con la corda oppure l'individuo è fermo).
@@ -10,13 +10,13 @@ Per questo progetto sono stati utilizzati i seguenti sensori presenti sulla boar
 	\item giroscopio triassiale;
 	\item sensore di temperatura e di umidità.
 \end{itemize}
-Tuttavia, i dati di temperatura e umidità non sono stati utilizzati poiché i dati ricavati non si sono mostrati essere significativi per l'obiettivo di questo progetto. Inoltre, è stato necessario modificare la libreria che gestisce la comunicazione con la IMU (file \texttt{LSM9DS1.cpp}) per cambiare il fondo scala dell'accelerometro (che di default è impostato a 4g):
+In realtà, i dati relativi alla temperatura e all'umidità non sono stati utilizzati poiché non si sono mostrati significativi per l'obiettivo di questo progetto. Inoltre, è stato necessario modificare la libreria che gestisce la comunicazione con la IMU (file \texttt{LSM9DS1.cpp}) per cambiare il fondo scala dell'accelerometro (che di default è impostato a 4g):
 \begin{itemize}
-	\item accelerometro: fondo scala 8g, frequenza di campionamento \SI{119}{\hertz};
+	\item accelerometro: fondo scala 8g, frequenza di campionamento \SI{119}{\hertz}; \todo{davide mi fai un check anche tu di questi dati visto che li avevi modificati tu?	}
 	\item giroscopio: fondo scala 2000 dps, frequenza di campionamento \SI{119}{\hertz}.
 \end{itemize}
 
-Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing}, è stato possibile realizzare un'applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e del risultato della predizione dell'all'attività ricevuta dall'Arduino. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
+Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing} è stato poi possibile realizzare un'applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e del risultato della predizione dell'attività ricevuta dall'Arduino. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
 
 \clearpage
 
@@ -27,9 +27,9 @@ Per l'attività di classificazione dell'attività si è scelto di utilizzare un 
 	\caption{Arduino posizionato sulla gamba del soggetto con sistema di riferimento.}
 	\label{fig:arduino_su_gamba}
 \end{figure}
-\todo{inserire foto schermata di acquisizione}
-Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le acquisizioni utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio con una caratteristica su cui vengono scritti i dati delle misure. Il central viene notificato ogni volta che il \textit{peripheral} aggiorna la caratteristica e ne legge il contenuto salvandolo in un file .csv che contiene le seguenti colonne: \textit{acc x}, \textit{acc y}, \textit{acc z}, \textit{gyro x}, \textit{gyro y}, \textit{gyro z}, \textit{temp}, \textit{humidity} e \textit{timestamp}. Sull'applicazione è possibile visualizzare i dati ricevuti in real time selezionando quali canali mostrare sul grafico (figura \ref{label}).
-
+Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le misure utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino è stato utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio con una caratteristica su cui vengono scritti i dati delle misure secondo il seguente formato: \\
+\centerline{\texttt{"accx,accy,accz,gyrox,gyroy,gyroz,temp,hr,timestamp"}.}
+Il central viene notificato ogni volta che il \textit{peripheral} aggiorna la caratteristica e, dopo averne letto il contenuto, salva le misure in un file .csv che contiene le seguenti colonne: \textit{accx}, \textit{accy}, \textit{accz}, \textit{gyrox}, \textit{gyroy}, \textit{gyroz}, \textit{temp}, \textit{hr} e \textit{timestamp}. Sull'applicazione è possibile visualizzare i dati ricevuti in tempo reale su un grafico (\Fig\ref{fig:schermata_acq}).
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.49\linewidth]{./ImageFiles/acquisition_acc.jpg}
@@ -38,8 +38,7 @@ Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmwa
 	\label{fig:schermata_acq}
 \end{figure}
 
-
-Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui un funzione di callback viene chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay}, che non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare un'applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Ciò però non si è mostrato sufficiente a garantire una frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e portava alla perdita di alcuni dati.
+Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui un funzione di callback viene chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay} che non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare un'applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Ciò però non si è mostrato essere sufficiente a garantire una frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e ciò portava alla perdita di alcuni dati.
 Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \url{https://github.com/rlogiacco/CircularBuffer}. In questo modo, se la comunicazione subisce un ritardo non si ha perdita di dati. Di seguito si riporta un esempio dei dati dell'accelerometro e giroscopio ottenuti durante una camminata di un soggetto (\Fig\ref{fig:imu_data}).
 \begin{figure}[tbh]
 	\centering
@@ -47,8 +46,8 @@ Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \
 	\caption{Dati acquisiti dall'accelerometro e giroscopio durante una camminata. I dati sono campionati ogni \SI{15}{\milli\second} e sono stati filtrati con un filtro passa basso con frequenza di taglio di \SI{20}{\hertz}.}
 	\label{fig:imu_data}
 \end{figure}
-Nella figura \ref{fig:time_interval}a) sono rappresentati gli intervalli di tempo tra due acquisizioni successive su una misura di \SI{76}{\second}. Il tempo medio risultante è di \SI{15.0057}{\milli\second} con una deviazione standard di \SI{0.4405}{\milli\second}. Senza buffer circolare (\Fig\ref{fig:time_interval}b)) si ottiene una media di circa \SI{16.1630}{\milli\second} con una deviazione standard di \SI{6}{\milli\second}. Infatti, è possibile vedere nell'immagine che si hanno molti più outliner.
-Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizione è stato misurato con la funzione \textit{millis()}, che ha errore di $\pm \SI{1}{\milli\second}$. 
+
+Nella figura \ref{fig:time_interval} si riporta un confronto tra gli intervalli di tempo tra due acquisizioni successive su una misura di \SI{76}{\second} eseguita su un soggetto durante una camminata con e senza buffer circolare. Nella figura \ref{fig:time_interval}a) si utilizza il buffer circolare e il tempo medio risultante è di \SI{15.0057}{\milli\second} con una deviazione standard di \SI{0.4405}{\milli\second}. Senza buffer circolare (\Fig\ref{fig:time_interval}b)) si ottiene una media di circa \SI{16.1630}{\milli\second} con una deviazione standard di \SI{6}{\milli\second}. Infatti, è possibile vedere nell'immagine che si hanno molti più outliner. L'utilizzo del buffer rende più robusto il sistema in caso di eventuali rallentamenti nell'invio dei dati. Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizione è stato misurato con la funzione \textit{millis()}, che ha errore di $\pm \SI{1}{\milli\second}$. 
 \begin{figure}[tbh]
 	\centering
 	a)

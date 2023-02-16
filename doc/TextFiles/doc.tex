@@ -16,7 +16,8 @@ In realtà, i dati relativi alla temperatura e all'umidità non sono stati utili
 	\item giroscopio: fondo scala 2000 dps, frequenza di campionamento \SI{119}{\hertz}.
 \end{itemize}
 
-Per l'attività di classificazione dell'attività si è scelto di utilizzare un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing} è stato poi possibile realizzare un'applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e del risultato della predizione dell'attività ricevuta dall'Arduino. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
+\noindent
+Per l'attività di classificazione dell'attività si è scelto di seguire un approccio \textit{black-box}, utilizzando una rete neurale opportunamente allenata con i dati raccolti dalla board. La rete neurale, sviluppata tramite il framework Edge Impulse, è stata poi installata sull'Arduino. Utilizzando quindi un modello di \textit{edge computing} è stato poi possibile realizzare un'applicazione, sviluppata grazie al framework Qt, che si occupa solamente della visualizzazione dei dati e del risultato della predizione dell'attività ricevuta dall'Arduino. In questo modo, si è potuto mantenere una frequenza di campionamento dei dati relativamente alta (circa \SI{66}{\hertz}) senza sovraccaricare la comunicazione BLE.
 
 \clearpage
 
@@ -24,20 +25,21 @@ Per l'attività di classificazione dell'attività si è scelto di utilizzare un 
 \begin{figure}[tbh]
 	\centering
 	\includegraphics[width=0.4\linewidth]{./ImageFiles/arduino_su_gamba_frame.jpg}
-	\caption{Arduino posizionato sulla gamba del soggetto con sistema di riferimento.}
+	\caption{Arduino posizionato sulla gamba del soggetto con relativo sistema di riferimento.}
 	\label{fig:arduino_su_gamba}
 \end{figure}
+
+\noindent
 Per poter acquisire i dati con Arduino, è stato necessario sviluppare un firmware apposito che consentisse di inviare le misure utilizzando la tecnologia Bluetooth Low Energy (BLE), in cui l'Arduino viene utilizzato nel ruolo di \textit{peripheral} mentre l'applicazione assume il ruolo di \textit{central}. La board di Arduino espone un servizio con una caratteristica su cui vengono scritti i dati delle misure secondo il seguente formato: \\
 \centerline{\texttt{"accx,accy,accz,gyrox,gyroy,gyroz,temp,hr,timestamp"}.}
 Il central viene notificato ogni volta che il \textit{peripheral} aggiorna la caratteristica e, dopo averne letto il contenuto, salva le misure in un file .csv che contiene le seguenti colonne: \textit{accx}, \textit{accy}, \textit{accz}, \textit{gyrox}, \textit{gyroy}, \textit{gyroz}, \textit{temp}, \textit{hr} e \textit{timestamp}. Sull'applicazione è possibile visualizzare i dati ricevuti in tempo reale su un grafico (\Fig\ref{fig:schermata_acq}).
-\begin{figure}[h]
+\begin{figure}[b!]
 	\centering
 	\includegraphics[width=0.49\linewidth]{./ImageFiles/acquisition_acc.jpg}
 	\includegraphics[width=0.49\linewidth]{./ImageFiles/acquisition_gyro.jpg}
 	\caption{Schermata di acquisizione dati dell'applicazione: l'immagine a sinistra mostra i segnali dell'accelerometro mentre quella a destra mostra i segnali del giroscopio durante l'attività cyclette.}
 	\label{fig:schermata_acq}
 \end{figure}
-
 Inizialmente, si è cercato di utilizzare una frequenza di campionamento dei dati pari a \SI{100}{\hertz}. Tuttavia, si è verificato che il flusso di dati non era sostenibile dal BLE. Tramite delle prove si è poi stabilito che una frequenza di campionamento dei dati sostenibile era di circa \SI{66}{\hertz} (un campione ogni \SI{15}{\milli\second}). Per assicurare una buona precisione nella frequenza di campionamento, si è scelto di utilizzare il meccanismo degli interrupt (Interrupt Service Routine), in cui una funzione di callback viene chiamata ogni \SI{15}{\milli\second}. Infatti, non è possibile utilizzare la funzione \textit{delay} poiché non garantisce intervalli regolari di acquisizione. Inoltre, ciò permette di realizzare un'applicazione \textit{pseudo} concorrente, in cui la funzione \textit{loop} principale si occupa dell'invio dei dati tramite BLE, mentre un'altra funzione, attivata da un interrupt, si occupa di acquisire i dati. Tuttavia, l'utilizzo degli interrupt non si è mostrato essere sufficiente a garantire una frequenza di campionamento accurata in quanto si è visto che il tempo necessario all'invio dei dati tramite BLE non è costante e ciò portava alla perdita di alcuni dati.
 Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \url{https://github.com/rlogiacco/CircularBuffer}. In questo modo, se la comunicazione subisce un ritardo non si ha perdita di dati. Di seguito è stato riportato un esempio dei dati dell'accelerometro e giroscopio ottenuti durante una camminata di un soggetto (\Fig\ref{fig:imu_data}).
 \begin{figure}[tbh]
@@ -47,6 +49,7 @@ Per questo motivo, è stato introdotto un buffer circolare tramite la libreria \
 	\label{fig:imu_data}
 \end{figure}
 
+\noindent
 Nella figura \ref{fig:time_interval} è stato riportato un confronto tra gli intervalli di tempo tra due acquisizioni successive su una misura di \SI{76}{\second} eseguita su un soggetto durante una camminata con e senza buffer circolare. Nella figura \ref{fig:time_interval}a) è stato utilizzato il buffer circolare e il tempo medio risultante è di \SI{15.0057}{\milli\second} con una deviazione standard di \SI{0.4405}{\milli\second}. Senza buffer circolare (\Fig\ref{fig:time_interval}b)) è stata ottenuta una media di circa \SI{16.1630}{\milli\second} con una deviazione standard di \SI{6}{\milli\second}: infatti, è possibile vedere nell'immagine che si hanno molti più outlier. Quindi l'utilizzo del buffer rende più robusto il sistema in caso di eventuali rallentamenti nell'invio dei dati. Si tenga in considerazione che l'istante di tempo in cui si eseguiva l'acquisizione è stato misurato con la funzione \textit{millis()}, che ha errore di $\pm \SI{1}{\milli\second}$. 
 \begin{figure}[tbh]
 	\centering
@@ -65,7 +68,7 @@ Nella figura \ref{fig:time_interval} è stato riportato un confronto tra gli int
 \clearpage
 
 \section{Classificazione delle attività} \label{classifSect}
-Nella figura \ref{fig:imu_data} è rappresentato un esempio di dati raccolti durante la camminata di un soggetto. Osservando i dati dell'accelerometro è possibile notare dei picchi, che corrispondono ai movimenti dei passi del soggetto. In particolare, per come è stato posizionato l'Arduino (\Fig\ref{fig:imu_data}), è possibile notare il contributo della forza di gravità sull'asse y che causa un offset di circa 1g nelle misure e i picchi corrispondono a quando il piede entra in contatto con il terreno. Invece, per quanto riguarda le misure del giroscopio, è interessante notare lungo l'asse z il movimento di rotazione del piede attorno alla caviglia durante la camminata. 
+Nella figura \ref{fig:imu_data} è rappresentato un esempio di dati raccolti durante la camminata di un soggetto. Osservando i dati dell'accelerometro è possibile notare dei picchi che corrispondono ai movimenti dei passi del soggetto. In particolare, per come è stato posizionato l'Arduino (\Fig\ref{fig:imu_data}), è possibile notare il contributo della forza di gravità sull'asse y che causa un offset di circa 1g nelle misure e i picchi corrispondono a quando il piede entra in contatto con il terreno. Invece, per quanto riguarda le misure del giroscopio, è interessante notare lungo l'asse z il movimento di rotazione del piede attorno alla caviglia durante la camminata. 
 
 Per realizzare la classificazione dei dati acquisiti dai sensori di Arduino e poi per visualizzarne la previsione sull'applicazione è stato sviluppato un ulteriore firmware al cui interno sono stati utilizzati tre thread differenti, analizzati più in dettaglio nella sezione \ref{arduinoSect}, che si occupano di ricavare i dati dalla IMU, effettuare la predizione ed inviare il risultato tramite BLE all'applicazione. In generale, il funzionamento del firmware prevede che inizialmente venga riempito un buffer circolare con i dati provenienti dai sensori. Successivamente, il buffer viene trasformato in un elenco di features tramite un DSP. Le features raccolte vengono poi passate al classificatore, realizzato grazie al framework Edge Impulse, che si occupa della classificazione. Infine, il risultato della classificazione viene trasmesso tramite BLE all'applicazione che mostra a video l'immagine relativa all'attività fisica identificata. Le schermate che possono essere visualizzate sull'applicazione si distinguono in base all'attività fisica rilevata come mostrato nella figura \ref{fig:attivitafisica}. Nei momenti subito dopo la connessione del dispositivo al BLE oppure nei momenti in cui non si riesce a classificare l'attività in corso sull'applicazione viene visualizzata la scritta \textit{"Unknown"}, che indica che il sistema non è in grado di riconosce l'attività.
 \begin{figure}[tbh]
@@ -130,4 +133,4 @@ Il funzionamento base del firmware caricato su Arduino per la classificazione de
 \end{figure}
 
 \noindent
-Nel Loop thread, la chiamata al classificatore corrisponde all'utilizzo delle librerie di Edge Impulse. Questa chiamata richiede come parametri in input il segnale, la variabile in cui salvare la previsione e un parametro che caratterizza l'inferenza. Per quanto riguarda i tempi di classificazione, il tempo necessario per passare da una classificazione alla successiva e quindi per cambiare la previsione è di circa 40-45 secondi. Questo tempo è dovuto al fatto che si deve svuotare il buffer dai dati precedenti e si deve identificare per sei volte la stessa attività prima di specificarla come previsione. La previsione viene eseguita ogni 5 secondi e il buffer è di \SI{15}{\second}. Per diminuire il tempo necessario per classificare una attività è possibile aumentare la frequenza con cui si esegue l'inferenza.
+Nel thread \textit{loop}, la chiamata al classificatore corrisponde all'utilizzo delle librerie di Edge Impulse. Questa chiamata richiede come parametri in input il segnale, la variabile in cui salvare la previsione e un parametro che caratterizza l'inferenza. Per quanto riguarda i tempi di classificazione, il tempo necessario per passare da una classificazione alla successiva e quindi per cambiare la previsione è di circa 40-45 secondi. Questo tempo è dovuto al fatto che si deve svuotare il buffer dai dati precedenti e si deve identificare per sei volte la stessa attività prima di definirla come previsione. La previsione viene eseguita ogni 5 secondi e il buffer contiene i dati di \SI{15}{\second} di attività. Per diminuire il tempo necessario per classificare una attività è possibile aumentare la frequenza con cui si esegue l'inferenza.

@@ -9,7 +9,7 @@
 
 /*setting parameter for inference module*/
 static bool debug_nn = false;
-static uint16_t run_inference_every_ms = 1000;
+static uint16_t run_inference_every_ms = 5000;
 unsigned long time_passed;
 uint8_t prediction_int; //result of prediction
 

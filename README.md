@@ -9,7 +9,7 @@
   <p align="center">
     A project delevoped for University Of Bergamo that identifies your phisical activity using Arduino Nano 33 BLE Sense!
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/DavideSalvetti/arduino_activity_classification"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="https://github.com/DavideSalvetti/arduino_activity_classification">View Demo</a>

@@ -1,3 +1,27 @@
+<br />
+<div align="center">
+ 
+  <img src="https://github.com/DavideSalvetti/arduino_activity_classification/blob/main/app/activity_tracker/img/lifestyle.png"  width="80" height="80">
+  
+
+  <h3 align="center">Arduino Activity Classification</h3>
+
+  <p align="center">
+    A project delevoped for University Of Bergamo that identifies your phisical activity using Arduino Nano 33 BLE Sense!
+    <br />
+    <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/DavideSalvetti/arduino_activity_classification">View Demo</a>
+    ·
+    <a href="https://github.com/DavideSalvetti/arduino_activity_classification/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/DavideSalvetti/arduino_activity_classification/issues">Request Feature</a>
+  </p>
+</div>
+
+
+
 # Arduino Activity Classification
 Arduino Activity Classification Using Arduino Nano 33 BLE Sense.
 
@@ -5,7 +29,7 @@ Arduino Activity Classification Using Arduino Nano 33 BLE Sense.
 The aim of this project is to classify the following physical activities: standing, walking, jumping and cycling. All the data come from an Arduino Nano 33 BLE Sense, a powerful Arduino board that has a lot of sensors on board, like an IMU, temperature and humidity sensors. The Arduno Nano 33 BLE Sense is placed above the ankle of the left leg: it collects data and, through an on board NN, classifies them. The Arduno uses BLE to communicate with a mobile phone app, developed with Qt 5.15.
 
 
-<h2>Icon used inside this project</h2>
+<h2>Icons used inside this project</h2>
 
 Inside this project, icons from <a href="https://www.flaticon.com/">Flaticon</a> were used. The following are all the attributions to the authors of the icons added to the mobile application:
 <br>
@@ -18,3 +42,6 @@ Inside this project, icons from <a href="https://www.flaticon.com/">Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/man" title="man icons">Man icons created by Freepik - Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/question-mark" title="question mark icons">Question mark icons created by Freepik - Flaticon</a>
 <a href="https://www.flaticon.com/free-icons/activity" title="activity icons">Activity icons created by Freepik - Flaticon</a>
+
+
+This README.md file was partially taken from <a href="https://github.com/othneildrew/Best-README-Template/blob/master/README.md">this link</a>. Thank you <a href="https://github.com/othneildrew">othneildrew</a>!
